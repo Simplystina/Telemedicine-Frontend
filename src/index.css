@@ -1,0 +1,93 @@
+/* eslint-disable */
+/* @theme is a Tailwind CSS v4 directive */
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap');
+@import "leaflet/dist/leaflet.css";
+
+@theme {
+    --color-primary-50: #f5f6fe;
+    --color-primary-100: #F2F2FDFF;
+    --color-primary-200: #d4d8fb;
+    --color-primary-300: #b3b9f7;
+    --color-primary-400: #8c94f0;
+    --color-primary-500: #636AE8FF;
+    --color-primary-600: #5158d4;
+    --color-primary-700: #4043b8;
+    --color-primary-800: #363996;
+    --color-primary-900: #2f3378;
+    --color-primary-950: #1e1f47;
+    --color-primary-950: #1e1f47;
+    --color-neutral-900: #171A1FFF;
+    /* neutral-900 */
+    --color-neutral-500: #565D6DFF;
+    --color-neutral-200: #F3F4F6FF;
+    /* neutral-200 */
+    --color-neutral-100: #FAFAFBFF;
+    /* neutral-100 */
+    --color-neutral-650: #424955FF;
+    /* neutral-650 */
+    --color-neutral-700: #323842FF;
+    /* neutral-700 */
+    --color-neutral-600: #565E6CFF;
+    /* neutral-600 */
+
+    --color-secondary-500: #E8618CFF;
+    /* secondary-500 */
+
+    /* Container */
+    --color-container: #FFFFFFFF;
+    /* white */
+
+    --font-archivo: 'Archivo', 'Inter', sans-serif;
+    --font-inter: 'Inter', 'Archivo', sans-serif;
+    --font-poppins: 'Poppins', 'Inter', sans-serif;
+
+    /* Custom animations */
+    --animate-slide-in-right: slide-in-right 0.6s ease-out;
+    --animate-float-slow: float 6s ease-in-out infinite;
+    --animate-float-medium: float 5s ease-in-out infinite;
+    --animate-float-fast: float 4s ease-in-out infinite;
+    --animate-fade-in-up: fade-in-up 0.5s ease-out forwards;
+}
+
+/* Keyframes for horizontal slide animation */
+@keyframes slide-in-right {
+    from {
+        opacity: 0;
+        transform: translateX(100px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-20px);
+    }
+}
+
+@keyframes fade-in-up {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Hide scrollbar for carousel */
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
