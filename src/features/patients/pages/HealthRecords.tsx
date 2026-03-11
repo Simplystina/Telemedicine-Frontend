@@ -1,9 +1,23 @@
 import { useState } from "react";
 import { FiDownload, FiEye, FiFileText, FiFilter, FiSearch, FiActivity, FiFilePlus, FiMapPin } from "react-icons/fi";
 import { FaUserDoctor } from "react-icons/fa6";
+import UploadDocumentModal from "../components/UploadDocumentModal";
+
+// --- Types ---
+interface HealthRecord {
+    id: string;
+    date: string;
+    title: string;
+    type: string;
+    doctor: string;
+    status: string;
+    facilityName: string;
+    state: string;
+    address: string;
+}
 
 // Mock Data
-const MOCK_RECORDS = [
+const MOCK_RECORDS: HealthRecord[] = [
     {
         id: "rec-1",
         date: "Oct 24, 2023",
@@ -63,6 +77,7 @@ const MOCK_RECORDS = [
 
 function HealthRecords() {
     const [searchTerm, setSearchTerm] = useState("");
+    const [isUploadOpen, setIsUploadOpen] = useState(false);
 
     const filteredRecords = MOCK_RECORDS.filter(record =>
         record.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -81,7 +96,10 @@ function HealthRecords() {
                         Securely view and manage your medical history, test results, and after-visit summaries.
                     </p>
                 </div>
-                <button className="flex items-center justify-center shrink-0 bg-primary-500 hover:bg-primary-600 text-white px-5 py-2.5 rounded-lg font-poppins font-semibold text-sm transition-colors shadow-sm">
+                <button
+                    onClick={() => setIsUploadOpen(true)}
+                    className="flex items-center justify-center shrink-0 bg-primary-500 hover:bg-primary-600 text-white px-5 py-2.5 rounded-lg font-poppins font-semibold text-sm transition-colors shadow-sm"
+                >
                     <FiFilePlus className="mr-2" /> Upload Record
                 </button>
             </div>
@@ -186,7 +204,12 @@ function HealthRecords() {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
                                             <div className="flex justify-end space-x-2">
-                                                <button className="p-2 text-neutral-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors" title="View Document">
+                                                {/* Doctor Notes: view is on Appointments page */}
+                                                <button
+                                                    className="p-2 text-neutral-300 cursor-not-allowed rounded-lg"
+                                                    title={record.type === "Doctor Note" ? "View notes via My Appointments" : "View document"}
+                                                    disabled
+                                                >
                                                     <FiEye className="w-5 h-5" />
                                                 </button>
                                                 <button className="p-2 text-neutral-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors" title="Download PDF">
@@ -210,8 +233,15 @@ function HealthRecords() {
                     </table>
                 </div>
             </div>
+
+            {/* Upload Document Modal */}
+            <UploadDocumentModal
+                isOpen={isUploadOpen}
+                onClose={() => setIsUploadOpen(false)}
+            />
         </div>
     );
 }
 
 export default HealthRecords;
+

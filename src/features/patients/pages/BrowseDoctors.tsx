@@ -1,16 +1,31 @@
 import { useState } from "react";
 import { FiSearch, FiFilter } from "react-icons/fi";
-import DoctorCard from "../components/DoctorCard";
+import DoctorCard from "@features/patients/components/DoctorCard";
+import BookAppointmentModal from "../components/BookAppointmentModal";
+import DoctorProfileModal, { type DoctorProfile, type PastVisit } from "../components/DoctorProfileModal";
 
-// Mock Data
-const MOCK_DOCTORS = [
+// -- Types --
+interface DoctorData extends DoctorProfile {
+    visitHistory: PastVisit[];
+}
+
+// -- Mock Data --
+const MOCK_DOCTORS: DoctorData[] = [
     {
         id: "1",
         name: "Sarah Jenkins",
         specialty: "Cardiologist",
         rating: 4.9,
         experience: "10 yrs",
-        imageUrl: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3"
+        hospital: "Mercy General Hospital",
+        bio: "Dr. Sarah Jenkins is a board-certified cardiologist with over 10 years of experience in diagnosing and treating heart conditions. She specialises in preventive cardiology and heart failure management.",
+        qualifications: ["MBBS, University of Lagos", "FWACP (Cardiology)", "Fellowship, Johns Hopkins"],
+        languages: ["English", "Yoruba"],
+        imageUrl: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=500&auto=format&fit=crop&q=60",
+        visitHistory: [
+            { date: "Oct 24, 2023", reason: "Routine cardiac check-up", status: "Completed" },
+            { date: "Jul 20, 2023", reason: "Annual comprehensive metabolic panel", status: "Completed" },
+        ],
     },
     {
         id: "2",
@@ -18,7 +33,14 @@ const MOCK_DOCTORS = [
         specialty: "Dermatologist",
         rating: 4.7,
         experience: "8 yrs",
-        imageUrl: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3"
+        hospital: "ClearSkin Dermatology",
+        bio: "Dr. David Chen specialises in both medical and cosmetic dermatology, with a strong focus on eczema, acne, and skin cancer screening.",
+        qualifications: ["MBBS, Ahmadu Bello University", "Diploma in Dermatology (UK)"],
+        languages: ["English", "Mandarin"],
+        imageUrl: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=500&auto=format&fit=crop&q=60",
+        visitHistory: [
+            { date: "Aug 02, 2023", reason: "Dermatology consultation — eczema", status: "Completed" },
+        ],
     },
     {
         id: "3",
@@ -26,7 +48,14 @@ const MOCK_DOCTORS = [
         specialty: "Pediatrician",
         rating: 5.0,
         experience: "15 yrs",
-        imageUrl: "https://images.unsplash.com/photo-1594824436998-dd40e4f29d4b?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3"
+        hospital: "Oak Clinical Associates",
+        bio: "Dr. Emily Clark is a highly experienced pediatrician passionate about child wellness, vaccinations, and early development monitoring.",
+        qualifications: ["MBBS, University of Ibadan", "FWACP (Paediatrics)", "MSc Child Health"],
+        languages: ["English", "Igbo"],
+        imageUrl: "https://images.unsplash.com/photo-1594824436998-dd40e4f29d4b?w=500&auto=format&fit=crop&q=60",
+        visitHistory: [
+            { date: "Sep 15, 2023", reason: "Upper respiratory tract infection", status: "Completed" },
+        ],
     },
     {
         id: "4",
@@ -34,6 +63,11 @@ const MOCK_DOCTORS = [
         specialty: "General Physician",
         rating: 4.6,
         experience: "5 yrs",
+        hospital: "Lagos Island General Hospital",
+        bio: "Dr. Marcus Johnson is a general practitioner offering comprehensive primary care for adults, including chronic disease management and preventive health services.",
+        qualifications: ["MBBS, University of Benin", "MWACP (General Practice)"],
+        languages: ["English", "Pidgin"],
+        visitHistory: [],
     },
     {
         id: "5",
@@ -41,6 +75,11 @@ const MOCK_DOCTORS = [
         specialty: "Psychiatrist",
         rating: 4.8,
         experience: "12 yrs",
+        hospital: "MindCare Mental Health Clinic",
+        bio: "Dr. Priya Patel is a consultant psychiatrist specialising in anxiety disorders, depression, and PTSD, with a compassionate and evidence-based approach.",
+        qualifications: ["MBBS, Obafemi Awolowo University", "FRCPsych (UK)"],
+        languages: ["English", "Hindi"],
+        visitHistory: [],
     },
     {
         id: "6",
@@ -48,7 +87,12 @@ const MOCK_DOCTORS = [
         specialty: "Neurologist",
         rating: 4.9,
         experience: "20 yrs",
-        imageUrl: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3"
+        hospital: "NeuroCare Specialist Clinic",
+        bio: "Dr. Anas Malik is a senior neurologist with two decades of experience managing stroke, epilepsy, migraine, and neurodegenerative diseases.",
+        qualifications: ["MBBS, University of Jos", "FWACP (Neurology)", "Fellowship, UCL London"],
+        languages: ["English", "Hausa", "Arabic"],
+        imageUrl: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=500&auto=format&fit=crop&q=60",
+        visitHistory: [],
     }
 ];
 
@@ -56,21 +100,31 @@ const SPECIALTIES = ["All", "General Physician", "Cardiologist", "Dermatologist"
 
 function BrowseDoctors() {
     // ---- MOCK SUBSCRIPTION STATE ----
-    // Toggle these values to see how the UI changes!
     const isSubscribed: boolean = true;
     const freeConsultationsRemaining: number = 0;
     // ---------------------------------
 
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedSpecialty, setSelectedSpecialty] = useState("All");
+    const [profileDoctor, setProfileDoctor] = useState<DoctorData | null>(null);
+    const [bookingDoctor, setBookingDoctor] = useState<DoctorData | null>(null);
 
-    // Filter logic
     const filteredDoctors = MOCK_DOCTORS.filter(doc => {
         const matchesSearch = doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             doc.specialty.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesSpecialty = selectedSpecialty === "All" || doc.specialty === selectedSpecialty;
         return matchesSearch && matchesSpecialty;
     });
+
+    const handleViewProfile = (id: string) => {
+        const doc = MOCK_DOCTORS.find(d => d.id === id);
+        if (doc) setProfileDoctor(doc);
+    };
+
+    const handleBook = (id: string) => {
+        const doc = MOCK_DOCTORS.find(d => d.id === id);
+        if (doc) { setProfileDoctor(null); setBookingDoctor(doc); }
+    };
 
     return (
         <div className="space-y-8 animate-fade-in-up">
@@ -115,7 +169,7 @@ function BrowseDoctors() {
                 ))}
             </div>
 
-            {/* Subscription Context Banner (Only show if unstructured/no free consults) */}
+            {/* Subscription Context Banner */}
             {!isSubscribed && freeConsultationsRemaining === 0 && (
                 <div className="bg-primary-50 border border-primary-100 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div>
@@ -139,8 +193,11 @@ function BrowseDoctors() {
                             <DoctorCard
                                 key={doctor.id}
                                 {...doctor}
+                                visitCount={doctor.visitHistory.filter(v => v.status === "Completed").length}
                                 isSubscribed={isSubscribed}
                                 freeConsultationsRemaining={freeConsultationsRemaining}
+                                onViewProfile={handleViewProfile}
+                                onBook={handleBook}
                             />
                         ))}
                     </div>
@@ -157,6 +214,21 @@ function BrowseDoctors() {
                 )}
             </div>
 
+            {/* Doctor Profile Modal */}
+            <DoctorProfileModal
+                isOpen={!!profileDoctor}
+                onClose={() => setProfileDoctor(null)}
+                doctor={profileDoctor}
+                pastVisits={profileDoctor?.visitHistory}
+                onBook={() => profileDoctor && handleBook(profileDoctor.id)}
+            />
+
+            {/* Book Appointment Modal */}
+            <BookAppointmentModal
+                isOpen={!!bookingDoctor}
+                onClose={() => setBookingDoctor(null)}
+                doctor={bookingDoctor}
+            />
         </div>
     );
 }

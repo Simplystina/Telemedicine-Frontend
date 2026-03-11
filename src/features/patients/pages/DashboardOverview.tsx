@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { FiCalendar, FiVideo, FiFileText, FiMessageSquare, FiTrendingUp, FiClock, FiStar} from "react-icons/fi";
+import { FiCalendar, FiVideo, FiFileText, FiMessageSquare, FiTrendingUp, FiClock, FiStar } from "react-icons/fi";
 import { FaUserDoctor } from "react-icons/fa6";
 
 function DashboardOverview() {
@@ -33,8 +33,8 @@ function DashboardOverview() {
                     <Link
                         to={freeConsultationsRemaining > 0 ? "/patient/browse-doctors" : "/patient/subscription"}
                         className={`shrink-0 px-6 py-2.5 rounded-lg font-poppins font-semibold text-sm transition-colors ${freeConsultationsRemaining > 0
-                                ? "bg-green-600 hover:bg-green-700 text-white"
-                                : "bg-primary-600 hover:bg-primary-700 text-white"
+                            ? "bg-green-600 hover:bg-green-700 text-white"
+                            : "bg-primary-600 hover:bg-primary-700 text-white"
                             }`}
                     >
                         {freeConsultationsRemaining > 0 ? "Find a Doctor" : "View Plans"}
@@ -90,13 +90,19 @@ function DashboardOverview() {
                             </div>
 
                             <div className="mt-6 flex gap-3">
-                                <button className="flex-1 bg-primary-500 hover:bg-primary-600 text-white font-poppins font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center">
+                                <Link
+                                    to="/patient/call/1"
+                                    className="flex-1 bg-primary-500 hover:bg-primary-600 text-white font-poppins font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center"
+                                >
                                     <FiVideo className="w-4 h-4 mr-2" />
                                     Join Call
-                                </button>
-                                <button className="flex-1 bg-white border border-neutral-200 hover:bg-neutral-50 text-neutral-700 font-poppins font-semibold py-2.5 rounded-lg transition-colors">
+                                </Link>
+                                <Link
+                                    to="/patient/appointments"
+                                    className="flex-1 bg-white border border-neutral-200 hover:bg-neutral-50 text-neutral-700 font-poppins font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center"
+                                >
                                     Reschedule
-                                </button>
+                                </Link>
                             </div>
                         </div>
                     </div>

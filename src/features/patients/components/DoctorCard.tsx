@@ -8,27 +8,36 @@ interface DoctorCardProps {
     rating: number;
     experience: string;
     imageUrl?: string;
+    visitCount?: number; // how many times the patient has seen this doctor
     // Subscription Logic Props
     isSubscribed: boolean;
     freeConsultationsRemaining: number;
+    onBook: (id: string) => void;
+    onViewProfile: (id: string) => void;
 }
 
 function DoctorCard({
+    id,
     name,
     specialty,
     rating,
     experience,
     imageUrl,
+    visitCount = 0,
     isSubscribed,
     freeConsultationsRemaining,
+    onBook,
+    onViewProfile,
 }: DoctorCardProps) {
 
-    // Determine the state of the booking button based on subscription logic
     const canBookFree = !isSubscribed && freeConsultationsRemaining > 0;
     const requiresSubscription = !isSubscribed && freeConsultationsRemaining === 0;
 
     return (
-        <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow group">
+        <div
+            className="bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow group cursor-pointer"
+            onClick={() => onViewProfile(id)}
+        >
             {/* Header Image / Color block */}
             <div className="h-24 bg-primary-50 relative">
                 {imageUrl ? (
@@ -37,6 +46,12 @@ function DoctorCard({
                     <div className="absolute -bottom-8 left-6 w-16 h-16 bg-white rounded-xl border-4 border-white shadow-sm flex items-center justify-center text-xl font-bold text-primary-600 font-poppins shrink-0">
                         {name.charAt(0)}
                     </div>
+                )}
+                {/* Visit count badge — only shown if patient has visited before */}
+                {visitCount > 0 && (
+                    <span className="absolute top-3 right-3 text-xs font-bold font-poppins text-primary-700 bg-white px-2.5 py-1 rounded-full shadow-sm border border-primary-100">
+                        Visited {visitCount}×
+                    </span>
                 )}
             </div>
 
@@ -56,7 +71,7 @@ function DoctorCard({
                     <span className="flex items-center"><FiClock className="mr-1.5" /> {experience} experience</span>
                 </div>
 
-                {/* Subcription Context Banner in Card */}
+                {/* Subscription Context Banner */}
                 {canBookFree && (
                     <div className="mb-4 text-xs font-semibold font-poppins text-green-700 bg-green-50 px-3 py-2 rounded-lg border border-green-100 flex items-center">
                         <FiStar className="w-3 h-3 mr-1.5 fill-current" />
@@ -64,18 +79,28 @@ function DoctorCard({
                     </div>
                 )}
 
-                {/* dynamic action button */}
-                <div className="mt-auto pt-2">
+                {/* Action buttons */}
+                <div className="mt-auto pt-2 flex gap-2">
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onViewProfile(id); }}
+                        className="flex-1 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-poppins font-semibold py-2.5 rounded-lg transition-colors text-sm"
+                    >
+                        View Profile
+                    </button>
                     {requiresSubscription ? (
                         <Link
                             to="/patient/subscription"
-                            className="block w-full text-center bg-white border-2 border-primary-500 text-primary-600 hover:bg-primary-50 font-poppins font-semibold py-2.5 rounded-lg transition-colors"
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex-1 text-center bg-white border-2 border-primary-500 text-primary-600 hover:bg-primary-50 font-poppins font-semibold py-2.5 rounded-lg transition-colors text-sm"
                         >
-                            Subscribe to Book
+                            Subscribe
                         </Link>
                     ) : (
-                        <button className="w-full bg-primary-500 hover:bg-primary-600 text-white font-poppins font-semibold py-2.5 rounded-lg transition-colors shadow-sm">
-                            {canBookFree ? "Book Free Consult" : "Book Appointment"}
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onBook(id); }}
+                            className="flex-1 bg-primary-500 hover:bg-primary-600 text-white font-poppins font-semibold py-2.5 rounded-lg transition-colors shadow-sm text-sm"
+                        >
+                            {canBookFree ? "Book Free" : "Book"}
                         </button>
                     )}
                 </div>

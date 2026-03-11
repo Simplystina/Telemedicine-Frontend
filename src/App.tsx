@@ -6,13 +6,14 @@ import ForgotPassword from "@/features/auth/pages/ForgotPasswordPage";
 import ResetPassword from "@/features/auth/pages/ResetPasswordPage";
 
 // Dashboard Imports
-import DashboardLayout from "@/features/patients/dashboard/components/DashboardLayout";
-import DashboardOverview from "@/features/patients/dashboard/pages/DashboardOverview";
-import BrowseDoctors from "@/features/patients/dashboard/pages/BrowseDoctors";
-import MyAppointments from "@/features/patients/dashboard/pages/MyAppointments";
-import HealthRecords from "@/features/patients/dashboard/pages/HealthRecords";
-import Messages from "@/features/patients/dashboard/pages/Messages";
-import Subscription from "@/features/patients/dashboard/pages/Subscription";
+import DashboardLayout from "@/features/patients/components/DashboardLayout";
+import DashboardOverview from "@/features/patients/pages/DashboardOverview";
+import BrowseDoctors from "@/features/patients/pages/BrowseDoctors";
+import MyAppointments from "@/features/patients/pages/MyAppointments";
+import HealthRecords from "@/features/patients/pages/HealthRecords";
+import Messages from "@/features/patients/pages/Messages";
+import Subscription from "@/features/patients/pages/Subscription";
+import VideoCallRoom from "@/features/patients/pages/VideoCallRoom";
 
 function App() {
   return (
@@ -33,6 +34,9 @@ function App() {
           <Route path="messages" element={<Messages />} />
           <Route path="subscription" element={<Subscription />} />
         </Route>
+
+        {/* Video Call — full screen, outside dashboard layout */}
+        <Route path="/patient/call/:appointmentId" element={<VideoCallRoom />} />
       </Routes>
     </BrowserRouter>
   );

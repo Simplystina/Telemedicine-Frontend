@@ -26,7 +26,7 @@ function Subscription() {
                     <div className="mb-8">
                         <h3 className="text-xl font-archivo font-bold text-neutral-900 mb-2">Basic Access</h3>
                         <p className="text-neutral-500 font-poppins flex items-baseline">
-                            <span className="text-4xl font-bold font-archivo text-neutral-900 mr-1">$0</span>
+                            <span className="text-4xl font-bold font-archivo text-neutral-900 mr-1">₦0</span>
                             / one-time
                         </p>
                     </div>
@@ -60,7 +60,7 @@ function Subscription() {
                     <div className="mb-8 relative z-10">
                         <h3 className="text-xl font-archivo font-bold text-white mb-2">Premium Unlimited</h3>
                         <p className="text-primary-100 font-poppins flex items-baseline">
-                            <span className="text-4xl font-bold font-archivo text-white mr-1">$49</span>
+                            <span className="text-4xl font-bold font-archivo text-white mr-1">₦5000</span>
                             / month
                         </p>
                     </div>
