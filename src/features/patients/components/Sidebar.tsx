@@ -9,7 +9,7 @@ import {
     FiSettings,
     FiLogOut
 } from "react-icons/fi";
-import Logo from "@assets/Logo.png";
+import Logo from "@assets/logo.png";
 
 const navItems = [
     { name: "Dashboard", path: "/patient", icon: FiHome, end: true },
@@ -32,7 +32,7 @@ function Sidebar() {
         <aside className="w-64 h-screen bg-white border-r border-neutral-200 hidden lg:flex flex-col sticky top-0 shrink-0">
             {/* Logo Area */}
             <div className="h-16 flex items-center px-6 border-b border-neutral-200 shrink-0">
-        
+
                 <Link to="/" className="flex items-center space-x-2">
                     <div>
                         <img src={Logo} alt="logo" className="h-10 w-auto mix-blend-multiply" />

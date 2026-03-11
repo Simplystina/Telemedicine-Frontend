@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'react-router-dom';
-import Logo from '@assets/Logo.png';
+import Logo from '@assets/logo.png';
 import { forgotPasswordSchema, type ForgotPasswordFormData } from '../validation/schemas';
 import FormInput from '../components/FormInput';
 
@@ -131,7 +131,7 @@ function ForgotPasswordPage() {
                 {/* Back to Login */}
                 <div className="mt-6">
                     <Link
-                            to="/auth/login"
+                        to="/auth/login"
                         className="flex items-center justify-center font-inter text-sm font-semibold text-neutral-700 hover:text-neutral-900 transition-colors"
                     >
                         <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

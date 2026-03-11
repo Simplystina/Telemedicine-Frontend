@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useSearchParams } from 'react-router-dom';
-import Logo from '@assets/Logo.png';
+import Logo from '@assets/logo.png';
 import { resetPasswordSchema, type ResetPasswordFormData } from '../validation/schemas';
 import PasswordInput from '../components/PasswordInput';
 
@@ -152,7 +152,7 @@ function ResetPasswordPage() {
                         </p>
 
                         <Link
-                                to="/auth/login"
+                            to="/auth/login"
                             className="inline-block w-full bg-primary-500 hover:bg-primary-600 text-white font-inter text-base font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg active:scale-95"
                         >
                             Go to Sign In
@@ -164,7 +164,7 @@ function ResetPasswordPage() {
                 {!isSubmitted && (
                     <div className="mt-6">
                         <Link
-                                to="/auth/login"
+                            to="/auth/login"
                             className="flex items-center justify-center font-inter text-sm font-semibold text-neutral-700 hover:text-neutral-900 transition-colors"
                         >
                             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
