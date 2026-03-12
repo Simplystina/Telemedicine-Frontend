@@ -20,7 +20,12 @@ const navItems = [
     { name: "Subscription", path: "/patient/subscription", icon: FiStar },
 ];
 
-function Sidebar() {
+interface SidebarProps {
+    isOpen?: boolean;
+    onClose?: () => void;
+}
+
+function Sidebar({ isOpen, onClose }: SidebarProps) {
     const navigate = useNavigate();
 
     const handleLogout = () => {
@@ -29,7 +34,12 @@ function Sidebar() {
     };
 
     return (
-        <aside className="w-64 h-screen bg-white border-r border-neutral-200 hidden lg:flex flex-col sticky top-0 shrink-0">
+        <aside className={`
+            fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-neutral-200 
+            transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0
+            ${isOpen ? "translate-x-0" : "-translate-x-full"}
+            flex flex-col h-screen sticky top-0 shrink-0
+        `}>
             {/* Logo Area */}
             <div className="h-16 flex items-center px-6 border-b border-neutral-200 shrink-0">
 
@@ -54,6 +64,7 @@ function Sidebar() {
                                 key={item.name}
                                 to={item.path}
                                 end={item.end}
+                                onClick={onClose}
                                 className={({ isActive }) =>
                                     `flex items-center px-3 py-2.5 rounded-lg font-poppins text-sm font-medium transition-colors ${isActive
                                         ? "bg-primary-50 text-primary-700 font-semibold"

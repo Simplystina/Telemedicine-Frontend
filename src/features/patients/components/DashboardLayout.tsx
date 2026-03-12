@@ -8,8 +8,11 @@ function DashboardLayout() {
 
     return (
         <div className="flex h-screen bg-neutral-50 w-full overflow-hidden">
-            {/* Desktop Sidebar */}
-            <Sidebar />
+            {/* Sidebar (Responsive) */}
+            <Sidebar
+                isOpen={isMobileMenuOpen}
+                onClose={() => setIsMobileMenuOpen(false)}
+            />
 
             {/* Mobile Sidebar Overlay */}
             {isMobileMenuOpen && (
