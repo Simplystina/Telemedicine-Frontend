@@ -103,7 +103,7 @@ function Testimonial() {
     return (
         <div className="relative py-20">
             <h1 className="pt-10 text-center font-archivo text-3xl leading-10 font-bold text-neutral-900">What Our Patients Say</h1>
-            <p className="text-center mx-auto pb-5 pt-10 w-[555px] font-inter text-lg leading-7 font-normal text-neutral-500">Connecting you with highly qualified medical professionals across various fields. Experience expert care from the comfort of your home.</p>
+            <p className="text-center mx-auto pb-5 pt-10 px-4 max-w-xl font-inter text-lg leading-7 font-normal text-neutral-500">Connecting you with highly qualified medical professionals across various fields. Experience expert care from the comfort of your home.</p>
 
             {/* Carousel Container */}
             <div
