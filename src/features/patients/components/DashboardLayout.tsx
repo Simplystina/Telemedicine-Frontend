@@ -19,7 +19,13 @@ function DashboardLayout() {
                 />
             )}
 
-            {/* Mobile Sidebar Drawer (We can reuse Sidebar logic later or make it responsive, but for now we rely on the desktop component and can refine mobile later) - TO DO: Refine Mobile Sidebar */}
+            {/* Mobile Sidebar Drawer */}
+            <div
+                className={`fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-300 ease-in-out lg:hidden ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+                    }`}
+            >
+                <Sidebar className="flex" onClose={() => setIsMobileMenuOpen(false)} />
+            </div>
 
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden">

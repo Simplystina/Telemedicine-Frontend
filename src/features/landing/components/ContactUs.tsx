@@ -25,7 +25,7 @@ function ContactUs() {
                     {/* Left Column - Contact Information */}
                     <div className="space-y-6">
                         <div>
-                            <h1 className="font-archivo text-3xl leading-tight font-bold text-neutral-900 mb-4">
+                            <h1 className="font-archivo text-2xl md:text-3xl lg:text-4xl leading-tight font-bold text-neutral-900 mb-4">
                                 Contact Us & Find Our Location
                             </h1>
                             <p className="font-inter text-lg text-neutral-600 leading-relaxed">
@@ -57,7 +57,7 @@ function ContactUs() {
                                 </div>
                                 <div>
                                     <p className="text-sm text-neutral-500 font-inter">Email</p>
-                                    <p className="font-semibold text-neutral-900 font-inter text-lg">support@drmaliktelemedicine.ng</p>
+                                    <p className="font-semibold text-neutral-900 font-inter text-sm sm:text-base md:text-lg break-all">support@drmaliktelemedicine.ng</p>
                                 </div>
                             </div>
 
@@ -79,7 +79,7 @@ function ContactUs() {
 
                     {/* Right Column - Interactive Map */}
                     <div className="bg-white p-8 rounded-2xl shadow-lg">
-                        <h2 className="font-archivo text-2xl font-bold text-neutral-900 mb-4 text-center">
+                        <h2 className="font-archivo text-xl md:text-2xl font-bold text-neutral-900 mb-4 text-center">
                             Serving patients worldwide through telemedicine
                         </h2>
                         <p className="text-center text-neutral-600 font-inter mb-6">

@@ -6,7 +6,7 @@ function Header() {
     return (
         <div className='pt-32 lg:pt-40 pb-10 flex flex-col lg:flex-row justify-between items-center lg:items-start gap-12 lg:gap-0 min-h-auto lg:min-h-[724px]'>
             <div className='text-center lg:text-left flex flex-col items-center lg:items-start'>
-                <h1 className='lg:pt-15 font-archivo text-4xl lg:text-[48px] max-w-sm lg:w-[348px] font-extrabold text-neutral-900 leading-tight lg:leading-[60px]'>
+                <h1 className='lg:pt-15 font-archivo text-3xl md:text-4xl lg:text-[48px] max-w-sm lg:w-[348px] font-extrabold text-neutral-900 leading-tight lg:leading-[60px]'>
                     Reduce Unnecessary Hospital Visits
                 </h1>
                 <p className='font-inter text-base font-normal text-neutral-500 mt-5 max-w-lg lg:w-[508px] leading-[29px]'>

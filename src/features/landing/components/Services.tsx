@@ -22,7 +22,7 @@ function Services() {
                 <img src={ServicesImg} alt="services image" className="w-full h-auto max-w-md lg:max-w-none" />
             </div>
             <div className="w-full lg:w-1/2 flex flex-col items-center lg:items-start text-center lg:text-left">
-                <h1 className="font-archivo text-3xl lg:text-4xl leading-tight font-bold text-neutral-900">Our Services & Specialities</h1>
+                <h1 className="font-archivo text-2xl md:text-3xl lg:text-4xl leading-tight font-bold text-neutral-900">Our Services & Specialities</h1>
                 <p className="pb-8 pt-6 max-w-xl font-inter text-lg leading-7 font-normal text-neutral-500">Connecting you with highly qualified medical professionals across various fields. Experience expert care from the comfort of your home.</p>
                 <div className="flex flex-wrap justify-center lg:justify-start gap-3 mt-2 max-w-xl">
                     {

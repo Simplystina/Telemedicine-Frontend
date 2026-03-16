@@ -11,7 +11,7 @@ function FAQ() {
     return (
         <div className="py-20">
             <div className="max-w-7xl mx-auto px-2 sm:px-3 lg:px-4">
-                <h1 className="text-center font-archivo text-[36px] leading-[40px] font-bold text-neutral-900">
+                <h1 className="text-center font-archivo text-2xl md:text-3xl lg:text-[36px] leading-[40px] font-bold text-neutral-900">
                     Frequently Asked Questions
                 </h1>
 

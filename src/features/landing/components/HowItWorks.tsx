@@ -29,7 +29,7 @@ function HowItWorks() {
     ]
     return (
         <div className='py-20 lg:py-32 px-4'>
-            <h1 className='font-archivo text-3xl lg:text-[36px] font-bold text-neutral-900 leading-tight text-center'>How it works</h1>
+            <h1 className='font-archivo text-2xl md:text-3xl lg:text-[36px] font-bold text-neutral-900 leading-tight text-center'>How it works</h1>
             <p className='font-inter text-base font-normal max-w-2xl mx-auto text-neutral-500 leading-normal mt-5 text-center'>
                 Get expert medical advice from the comfort of your home with Dr. Malik Telemedicine. Skip the waiting rooms and connect with qualified healthcare professionals instantly.
             </p>

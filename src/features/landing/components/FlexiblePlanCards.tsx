@@ -6,9 +6,9 @@ const FlexiblePlanCards = ({ plan }: { plan: any }) => {
     return (
         <div className="w-full max-w-[400px] min-h-[460px] bg-white rounded-2xl shadow-[0px_0px_2px_rgba(23,26,31,0.12),0px_8px_17px_rgba(23,26,31,0.15)] p-8 flex flex-col justify-between transition-all duration-300 hover:bg-primary-50 hover:border-2 hover:border-primary-500 hover:scale-[1.02] cursor-pointer">
             <div>
-                <h1 className="pb-5 font-archivo text-2xl leading-10 font-bold text-neutral-900">{title}</h1>
+                <h1 className="pb-5 font-archivo text-xl md:text-2xl leading-10 font-bold text-neutral-900">{title}</h1>
                 <span className="flex items-center gap-2">
-                    <h1 className='font-archivo text-4xl leading-[30px] font-extrabold text-primary-500'>{price}</h1>
+                    <h1 className='font-archivo text-3xl md:text-4xl leading-[30px] font-extrabold text-primary-500'>{price}</h1>
                     <p className='font-archivo text-4xl leading-[30px] font-extrabold text-neutral-500'>{duration}</p>
                 </span>
                 <div className='flex flex-col gap-2 pt-5'>
