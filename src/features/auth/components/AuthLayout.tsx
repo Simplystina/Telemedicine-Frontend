@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import AuthPatientImage from '@assets/AuthPatientImage.png';
+import AuthPatientImage from '@assets/AuthPatientImage.webp';
 interface AuthLayoutProps {
     children: ReactNode;
 }
@@ -13,6 +13,9 @@ function AuthLayout({ children }: AuthLayoutProps) {
                 <img
                     src={AuthPatientImage}
                     alt="Healthcare Professional"
+                    loading="lazy"
+                    width={800}
+                    height={1200}
                     className="w-full h-full object-cover animate-fade-in-up"
                     style={{ animationDuration: '1s' }}
                 />

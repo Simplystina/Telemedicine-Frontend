@@ -23,7 +23,7 @@ const Navbar = () => {
                     <div className="shrink-0">
                         <Link to="/" className="flex items-center space-x-2">
                             <div>
-                                <img src={logo} alt="logo" className="w-10 h-10" />
+                                <img src={logo} alt="logo" width="40" height="40" className="w-10 h-10" />
                             </div>
                             <span className="text-xl leading-5 font-bold font-archivo text-primary-500">
                                 Dr. Malik Telemedicine

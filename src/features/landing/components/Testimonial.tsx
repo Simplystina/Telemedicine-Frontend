@@ -1,7 +1,7 @@
 import { useRef, useEffect } from "react"
 import { IoChevronBack, IoChevronForward } from "react-icons/io5"
 import TestimonialCard from "./TestimonialCard"
-import image from "@assets/ServicesImage.png"
+import image from "@assets/ServicesImage.webp"
 
 function Testimonial() {
     const scrollContainerRef = useRef<HTMLDivElement>(null)

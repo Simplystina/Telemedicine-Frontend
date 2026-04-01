@@ -1,6 +1,6 @@
 import Card from './Card'
 import BrowseDoctorsIcon from "@assets/browseDoctorsIcon.png"
-import BookAppointmentIcon from "@assets/BookAppointementIcon.png"
+import BookAppointmentIcon from "@assets/BookAppointementIcon.webp"
 import ConsultOnlineIcon from "@assets/ConsultOnlineIcon.png"
 import ChatWithDoctorIcon from "@assets/ChatWithDrIcon.png"
 function HowItWorks() {

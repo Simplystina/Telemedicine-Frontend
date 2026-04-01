@@ -1,6 +1,6 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { FaUserDoctor } from "react-icons/fa6"
 import { FaUser } from "react-icons/fa"
 import { signUpSchema, type SignUpFormData } from '../validation/schemas';
@@ -10,6 +10,7 @@ import PasswordInput from '../components/PasswordInput';
 import AuthLayout from '../components/AuthLayout';
 
 function SignUpPage() {
+    const navigate = useNavigate();
     const {
         register,
         handleSubmit,
@@ -35,10 +36,14 @@ function SignUpPage() {
 
     const onSubmit = async (data: SignUpFormData) => {
         try {
-            // Simulate API call
-            await new Promise((resolve) => setTimeout(resolve, 1000));
+            await new Promise((resolve) => setTimeout(resolve, 800));
             console.log('Sign up:', data);
-            // Handle successful signup here
+            // Redirect based on selected role
+            if (data.role === 'doctor') {
+                navigate('/doctor');
+            } else {
+                navigate('/patient');
+            }
         } catch (error) {
             console.error('Sign up error:', error);
         }

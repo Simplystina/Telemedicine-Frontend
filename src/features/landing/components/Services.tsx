@@ -1,4 +1,4 @@
-import ServicesImg from "@assets/ServicesImage.png"
+import ServicesImg from "@assets/ServicesImage.webp"
 
 function Services() {
 
@@ -19,7 +19,14 @@ function Services() {
     return (
         <div className="bg-neutral-100 flex flex-col lg:flex-row items-center justify-center gap-10 lg:gap-16 py-16 lg:py-24 px-4 overflow-hidden">
             <div className="w-full max-w-lg lg:w-1/2 flex justify-center lg:justify-end">
-                <img src={ServicesImg} alt="services image" className="w-full h-auto max-w-md lg:max-w-none" />
+                <img
+                    src={ServicesImg}
+                    alt="services image"
+                    loading="lazy"
+                    width={448}
+                    height={448}
+                    className="w-full h-auto max-w-md lg:max-w-none"
+                />
             </div>
             <div className="w-full lg:w-1/2 flex flex-col items-center lg:items-start text-center lg:text-left">
                 <h1 className="font-archivo text-2xl md:text-3xl lg:text-4xl leading-tight font-bold text-neutral-900">Our Services & Specialities</h1>

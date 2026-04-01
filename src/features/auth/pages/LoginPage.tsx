@@ -1,14 +1,18 @@
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate } from 'react-router-dom';
 import { loginSchema, type LoginFormData } from '../validation/schemas';
 import FormInput from '../components/FormInput';
 import PasswordInput from '../components/PasswordInput';
+import { FaUser, FaUserMd } from "react-icons/fa";
 
 import AuthLayout from '../components/AuthLayout';
 
 function LoginPage() {
     const navigate = useNavigate();
+    const [role, setRole] = useState<'patient' | 'doctor'>('patient');
+
     const {
         register,
         handleSubmit,
@@ -24,11 +28,14 @@ function LoginPage() {
 
     const onSubmit = async (data: LoginFormData) => {
         try {
-            // Simulate API call
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-            console.log('Login:', data);
-            // Handle successful login here
-            navigate('/patient');
+            await new Promise((resolve) => setTimeout(resolve, 800));
+            console.log('Login:', { ...data, role });
+            // Redirect based on selected role
+            if (role === 'doctor') {
+                navigate('/doctor');
+            } else {
+                navigate('/patient');
+            }
         } catch (error) {
             console.error('Login error:', error);
         }
@@ -47,6 +54,32 @@ function LoginPage() {
 
             {/* Login Form */}
             <div className="bg-white rounded-2xl shadow-xl p-8">
+                {/* Role Selector */}
+                <div className="flex p-1 bg-neutral-100 rounded-xl mb-6">
+                    <button
+                        type="button"
+                        onClick={() => setRole('patient')}
+                        className={`flex-1 flex items-center justify-center space-x-2 py-2.5 rounded-lg font-poppins text-sm font-semibold transition-all ${role === 'patient'
+                            ? 'bg-white text-primary-600 shadow-sm'
+                            : 'text-neutral-500 hover:text-neutral-700'
+                            }`}
+                    >
+                        <FaUser className="w-3.5 h-3.5" />
+                        <span>Patient</span>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setRole('doctor')}
+                        className={`flex-1 flex items-center justify-center space-x-2 py-2.5 rounded-lg font-poppins text-sm font-semibold transition-all ${role === 'doctor'
+                            ? 'bg-white text-primary-600 shadow-sm'
+                            : 'text-neutral-500 hover:text-neutral-700'
+                            }`}
+                    >
+                        <FaUserMd className="w-4 h-4" />
+                        <span>Doctor</span>
+                    </button>
+                </div>
+
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                     {/* Email Input */}
                     <FormInput

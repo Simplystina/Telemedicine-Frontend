@@ -13,7 +13,14 @@ function Footer() {
                 <div className="flex flex-col gap-12">
                     <div className="flex flex-col lg:flex-row justify-between items-center gap-8">
                         <div className="flex flex-col lg:flex-row items-center gap-4 text-center lg:text-left">
-                            <img src={Logo} alt="logo" className="w-12 h-12 brightness-0 invert" />
+                             <img 
+                                src={Logo} 
+                                alt="logo" 
+                                loading="lazy"
+                                width="48"
+                                height="48"
+                                className="w-12 h-12 brightness-0 invert" 
+                            />
                             <h2 className="font-poppins text-2xl font-bold text-white">Dr. Malik Telemedicine</h2>
                         </div>
                         <div className="flex flex-wrap justify-center items-center gap-x-8 gap-y-4">

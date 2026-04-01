@@ -1,4 +1,4 @@
-import doctor from "@/assets/doctor.png"
+import doctor from "@/assets/doctor.webp"
 import SignUpButton from '@/shared/components/SignUpBotton'
 import { GrLocation } from "react-icons/gr";
 
@@ -25,7 +25,14 @@ function Header() {
                 </div>
             </div>
             <div className='w-full lg:w-auto flex justify-center'>
-                <img src={doctor} alt="doctor" className='w-full max-w-[608px] h-auto rounded-2xl shadow-[0px_0px_2px_rgba(23,26,31,0.12),0px_17px_35px_rgba(23,26,31,0.24)]' />
+                <img
+                    src={doctor}
+                    alt="doctor"
+                    fetchPriority="high"
+                    width={608}
+                    height={724}
+                    className='w-full max-w-[608px] h-auto rounded-2xl shadow-[0px_0px_2px_rgba(23,26,31,0.12),0px_17px_35px_rgba(23,26,31,0.24)]'
+                />
             </div>
         </div>
     )
