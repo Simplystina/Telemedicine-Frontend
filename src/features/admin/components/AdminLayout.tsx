@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet } from "react-router-dom";
+import { useAuth } from "@/features/auth/hooks/useAuth";
+import { useAuthStore } from "@/features/auth/store/useAuthStore";
 import {
     FiHome, FiUsers, FiActivity, FiShield, FiSettings,
     FiBell, FiMenu, FiLogOut
@@ -15,7 +17,10 @@ const navItems = [
 ];
 
 function AdminSidebar({ className = "hidden lg:flex sticky top-0", onClose }: { className?: string; onClose?: () => void }) {
-    const navigate = useNavigate();
+    const { logout } = useAuth();
+    const user = useAuthStore(state => state.user);
+    const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Admin';
+    const initials = [user?.firstName, user?.lastName].filter(Boolean).map(n => n![0]).join('').toUpperCase() || 'A';
 
     return (
         <aside className={`w-64 h-screen bg-white border-r border-neutral-200 flex-col shrink-0 ${className}`}>
@@ -32,10 +37,10 @@ function AdminSidebar({ className = "hidden lg:flex sticky top-0", onClose }: { 
             {/* Admin Badge */}
             <div className="mx-4 mt-4 mb-1 px-3 py-2 bg-primary-50 border border-primary-100 rounded-xl flex items-center space-x-2">
                 <div className="w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center text-white font-bold font-archivo text-sm shrink-0">
-                    OW
+                    {initials}
                 </div>
                 <div className="min-w-0">
-                    <p className="text-xs font-semibold font-poppins text-primary-900 truncate">Platform Owner</p>
+                    <p className="text-xs font-semibold font-poppins text-primary-900 truncate">{fullName}</p>
                     <p className="text-[10px] font-poppins text-primary-600">Admin Access</p>
                 </div>
             </div>
@@ -72,7 +77,7 @@ function AdminSidebar({ className = "hidden lg:flex sticky top-0", onClose }: { 
             {/* Bottom Actions */}
             <div className="p-4 border-t border-neutral-200 space-y-1 shrink-0">
                 <button
-                    onClick={() => navigate("/admin-login")}
+                    onClick={() => logout('/admin-login')}
                     className="w-full flex items-center px-3 py-2.5 rounded-lg font-poppins text-xs md:text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
                 >
                     <FiLogOut className="w-5 h-5 mr-3 shrink-0" />
@@ -84,6 +89,10 @@ function AdminSidebar({ className = "hidden lg:flex sticky top-0", onClose }: { 
 }
 
 function AdminTopNavigation({ onMenuClick }: { onMenuClick: () => void }) {
+    const user = useAuthStore(state => state.user);
+    const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Admin';
+    const initials = [user?.firstName, user?.lastName].filter(Boolean).map(n => n![0]).join('').toUpperCase() || 'A';
+
     return (
         <header className="h-16 bg-white border-b border-neutral-200 flex items-center justify-between px-4 lg:px-8 shrink-0 sticky top-0 z-20">
             {/* Mobile Menu Button */}
@@ -107,14 +116,14 @@ function AdminTopNavigation({ onMenuClick }: { onMenuClick: () => void }) {
                         <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
                     </button>
 
-                    {/* Owner Avatar */}
+                    {/* Admin Avatar */}
                     <div className="flex items-center space-x-3 border-l border-neutral-200 pl-4 ml-2">
                         <div className="hidden md:block text-right">
-                            <p className="text-sm font-poppins font-semibold text-neutral-900">Platform Owner</p>
+                            <p className="text-sm font-poppins font-semibold text-neutral-900">{fullName}</p>
                             <p className="text-xs font-poppins text-primary-500">Administrator</p>
                         </div>
                         <div className="w-9 h-9 rounded-full bg-primary-500 flex items-center justify-center text-white font-bold font-poppins">
-                            OW
+                            {initials}
                         </div>
                     </div>
                 </div>

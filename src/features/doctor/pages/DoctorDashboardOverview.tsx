@@ -3,20 +3,15 @@ import {
     FiCalendar, FiUsers, FiDollarSign, FiMessageSquare,
     FiClock, FiVideo, FiTrendingUp, FiCheckCircle, FiAlertCircle
 } from "react-icons/fi";
+import { useAppointments } from "@/features/appointments/hooks/useAppointments";
+import { useAuthStore } from "@/features/auth/store/useAuthStore";
 
-const todayAppointments = [
-    { id: "a1", patient: "Jane Doe", type: "Follow-up", time: "09:00 AM", status: "confirmed" },
-    { id: "a2", patient: "Emeka Eze", type: "New Consultation", time: "10:30 AM", status: "confirmed" },
-    { id: "a3", patient: "Aisha Bello", type: "Routine Check", time: "01:00 PM", status: "pending" },
-    { id: "a4", patient: "Chidi Okeke", type: "Follow-up", time: "03:00 PM", status: "confirmed" },
-];
-
-const statCards = [
-    { label: "Today's Appointments", value: "4", icon: FiCalendar, color: "primary", change: "+2 from yesterday" },
-    { label: "Total Patients", value: "128", icon: FiUsers, color: "blue", change: "+5 this week" },
-    { label: "Monthly Earnings", value: "₦480,000", icon: FiDollarSign, color: "green", change: "+12% vs last month" },
-    { label: "Unread Messages", value: "7", icon: FiMessageSquare, color: "secondary", change: "3 urgent" },
-];
+function to12h(time24: string): string {
+    const [h, m] = time24.split(':').map(Number);
+    const period = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return `${h12.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')} ${period}`;
+}
 
 const colorMap: Record<string, { bg: string; text: string; iconBg: string }> = {
     primary: { bg: "bg-primary-50", text: "text-primary-600", iconBg: "bg-primary-100" },
@@ -26,14 +21,31 @@ const colorMap: Record<string, { bg: string; text: string; iconBg: string }> = {
 };
 
 function DoctorDashboardOverview() {
+    const { user } = useAuthStore();
+    const { data: apptData, isLoading } = useAppointments();
+
+    const today = new Date().toISOString().slice(0, 10);
+    const todayAppointments = (apptData?.appointments ?? [])
+        .filter(a => a.date === today)
+        .sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+    const doctorDisplayName = user?.firstName ? `Dr. ${user.firstName}` : 'Doctor';
+
+    const statCards = [
+        { label: "Today's Appointments", value: isLoading ? '—' : String(todayAppointments.length), icon: FiCalendar, color: "primary", change: "scheduled for today" },
+        { label: "Total Patients", value: "128", icon: FiUsers, color: "blue", change: "+5 this week" },
+        { label: "Monthly Earnings", value: "₦480,000", icon: FiDollarSign, color: "green", change: "+12% vs last month" },
+        { label: "Unread Messages", value: "7", icon: FiMessageSquare, color: "secondary", change: "3 urgent" },
+    ];
+
     return (
         <div className="space-y-8 animate-fade-in-up">
 
             {/* Header */}
             <div>
-                <h1 className="text-2xl font-archivo font-bold text-neutral-900 mb-1">Welcome back, Dr. Marcus 👋</h1>
+                <h1 className="text-2xl font-archivo font-bold text-neutral-900 mb-1">Welcome back, {doctorDisplayName}</h1>
                 <p className="text-neutral-600 font-poppins text-sm">
-                    Here's your practice overview for today — Tuesday, March 31, 2026.
+                    Here's your practice overview for today.
                 </p>
             </div>
 
@@ -74,39 +86,50 @@ function DoctorDashboardOverview() {
                         </div>
 
                         <div className="space-y-3">
-                            {todayAppointments.map((appt) => (
-                                <div key={appt.id} className="flex items-center justify-between p-4 rounded-xl bg-neutral-50 border border-neutral-100 hover:border-primary-100 transition-colors">
-                                    <div className="flex items-center space-x-4">
-                                        <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold font-archivo text-sm shrink-0">
-                                            {appt.patient.split(" ").map(n => n[0]).join("")}
+                            {isLoading ? (
+                                Array.from({ length: 3 }).map((_, i) => (
+                                    <div key={i} className="h-16 rounded-xl bg-neutral-100 animate-pulse" />
+                                ))
+                            ) : todayAppointments.length === 0 ? (
+                                <p className="text-center text-neutral-400 font-poppins text-sm py-6">No appointments scheduled for today.</p>
+                            ) : todayAppointments.map((appt) => {
+                                const nameParts = [appt.patient?.firstName, appt.patient?.lastName].filter(Boolean);
+                                const patientName = nameParts.join(' ') || 'Unknown Patient';
+                                const initials = nameParts.map(n => n![0]).join('') || '?';
+                                return (
+                                    <div key={appt.id} className="flex items-center justify-between p-4 rounded-xl bg-neutral-50 border border-neutral-100 hover:border-primary-100 transition-colors">
+                                        <div className="flex items-center space-x-4">
+                                            <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold font-archivo text-sm shrink-0">
+                                                {initials}
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-bold font-poppins text-neutral-900">{patientName}</p>
+                                                <p className="text-xs font-poppins text-neutral-500 capitalize">{appt.type}</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p className="text-sm font-bold font-poppins text-neutral-900">{appt.patient}</p>
-                                            <p className="text-xs font-poppins text-neutral-500">{appt.type}</p>
+                                        <div className="flex items-center space-x-3">
+                                            <div className="text-right hidden sm:block">
+                                                <p className="text-sm font-semibold font-poppins text-neutral-900 flex items-center">
+                                                    <FiClock className="w-3.5 h-3.5 mr-1 text-neutral-400" />
+                                                    {to12h(appt.startTime)}
+                                                </p>
+                                            </div>
+                                            <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold font-poppins ${appt.status === "confirmed"
+                                                ? "bg-green-50 text-green-700"
+                                                : "bg-amber-50 text-amber-700"
+                                                }`}>
+                                                {appt.status === "confirmed" ? "Confirmed" : "Pending"}
+                                            </span>
+                                            <Link
+                                                to={`/doctor/call/${appt.id}`}
+                                                className="p-2 rounded-lg bg-primary-50 text-primary-600 hover:bg-primary-100 transition-colors"
+                                            >
+                                                <FiVideo className="w-4 h-4" />
+                                            </Link>
                                         </div>
                                     </div>
-                                    <div className="flex items-center space-x-3">
-                                        <div className="text-right hidden sm:block">
-                                            <p className="text-sm font-semibold font-poppins text-neutral-900 flex items-center">
-                                                <FiClock className="w-3.5 h-3.5 mr-1 text-neutral-400" />
-                                                {appt.time}
-                                            </p>
-                                        </div>
-                                        <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold font-poppins ${appt.status === "confirmed"
-                                            ? "bg-green-50 text-green-700"
-                                            : "bg-amber-50 text-amber-700"
-                                            }`}>
-                                            {appt.status === "confirmed" ? "Confirmed" : "Pending"}
-                                        </span>
-                                        <Link
-                                            to={`/doctor/call/${appt.id}`}
-                                            className="p-2 rounded-lg bg-primary-50 text-primary-600 hover:bg-primary-100 transition-colors"
-                                        >
-                                            <FiVideo className="w-4 h-4" />
-                                        </Link>
-                                    </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
                 </div>

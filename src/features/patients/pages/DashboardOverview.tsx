@@ -1,12 +1,66 @@
 import { Link } from "react-router-dom";
 import { FiCalendar, FiVideo, FiFileText, FiMessageSquare, FiTrendingUp, FiClock, FiStar } from "react-icons/fi";
 import { FaUserDoctor } from "react-icons/fa6";
+import { usePatientProfile } from "@/features/patients/hooks/usePatient";
+import { useAppointments } from "@/features/appointments/hooks/useAppointments";
+import { useAuthStore } from "@/features/auth/store/useAuthStore";
+import { usePrescriptions } from "@/features/prescriptions/hooks/usePrescriptions";
+
+function formatDate(dateStr: string): string {
+    return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', {
+        month: 'short', day: 'numeric', year: 'numeric',
+    });
+}
+
+function to12h(time24: string): string {
+    const [h, m] = time24.split(':').map(Number);
+    const period = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return `${h12.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')} ${period}`;
+}
+
+function canJoinCall(date: string, startTime: string): boolean {
+    const appointmentStart = new Date(`${date}T${startTime}`);
+    const openAt = new Date(appointmentStart.getTime() - 10 * 60 * 1000);
+    return new Date() >= openAt;
+}
 
 function DashboardOverview() {
     // ---- MOCK SUBSCRIPTION STATE ----
     const isSubscribed: boolean = true;
     const freeConsultationsRemaining: number = 1;
     // ---------------------------------
+
+    const { data: profile } = usePatientProfile();
+    const authUser = useAuthStore(state => state.user);
+    const displayName = [profile?.firstName ?? authUser?.firstName, profile?.lastName ?? authUser?.lastName].filter(Boolean).join(' ') || 'there';
+
+    const { data: apptData } = useAppointments();
+    const { data: prescriptions = [], isLoading: isLoadingRx } = usePrescriptions();
+
+    // Flatten all medications from all prescriptions, most recent first
+    const allMedications = prescriptions
+        .slice()
+        .sort((a, b) => b.issuedAt.localeCompare(a.issuedAt))
+        .flatMap(rx => rx.medications)
+        .slice(0, 3);
+    const today = new Date().toISOString().slice(0, 10);
+    const nextAppointment = (apptData?.appointments ?? [])
+        .filter(a => (a.status === 'confirmed' || a.status === 'pending') && a.date >= today)
+        .sort((a, b) => (a.date + a.startTime).localeCompare(b.date + b.startTime))[0];
+
+    const nextDoctorName = nextAppointment
+        ? (() => {
+            const parts = [nextAppointment.doctor?.firstName, nextAppointment.doctor?.lastName].filter(Boolean);
+            const n = parts.join(' ') || 'Doctor';
+            return n.startsWith('Dr.') ? n : `Dr. ${n}`;
+          })()
+        : null;
+    const nextSpecialty = nextAppointment?.doctor?.specialty?.name ?? '';
+    const nextDate = nextAppointment ? formatDate(nextAppointment.date) : '';
+    const nextTime = nextAppointment
+        ? `${to12h(nextAppointment.startTime)} - ${to12h(nextAppointment.endTime)}`
+        : '';
 
     return (
         <div className="space-y-8 animate-fade-in-up">
@@ -46,7 +100,7 @@ function DashboardOverview() {
             <div>
                 <h1 className="text-2xl font-archivo font-bold text-neutral-900 mb-1">Dashboard Overview</h1>
                 <p className="text-neutral-600 font-poppins text-sm">
-                    Welcome back, Jane Doe! Here is a summary of your recent activities and upcoming schedule.
+                    Welcome back, {displayName}! Here is a summary of your recent activities and upcoming schedule.
                 </p>
             </div>
 
@@ -66,44 +120,66 @@ function DashboardOverview() {
                                     <FiCalendar className="mr-2 text-primary-500" />
                                     Upcoming Appointment
                                 </h2>
-                                <span className="px-3 py-1 bg-green-50 text-green-700 text-xs font-bold font-poppins rounded-full">
-                                    Confirmed
-                                </span>
+                                {nextAppointment && (
+                                    <span className={`px-3 py-1 text-xs font-bold font-poppins rounded-full ${nextAppointment.status === 'confirmed' ? 'bg-green-50 text-green-700' : 'bg-yellow-50 text-yellow-700'}`}>
+                                        {nextAppointment.status.charAt(0).toUpperCase() + nextAppointment.status.slice(1)}
+                                    </span>
+                                )}
                             </div>
 
-                            <div className="flex flex-col md:flex-row md:items-center justify-between bg-neutral-50 rounded-xl p-5 border border-neutral-100">
-                                <div className="flex items-center space-x-4 mb-4 md:mb-0">
-                                    <div className="w-14 h-14 bg-white border border-neutral-200 rounded-full flex items-center justify-center shrink-0">
-                                        <FaUserDoctor className="w-6 h-6 text-primary-500" />
+                            {nextAppointment ? (
+                                <>
+                                    <div className="flex flex-col md:flex-row md:items-center justify-between bg-neutral-50 rounded-xl p-5 border border-neutral-100">
+                                        <div className="flex items-center space-x-4 mb-4 md:mb-0">
+                                            <div className="w-14 h-14 bg-white border border-neutral-200 rounded-full flex items-center justify-center shrink-0">
+                                                <FaUserDoctor className="w-6 h-6 text-primary-500" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-base font-bold font-poppins text-neutral-900">{nextDoctorName}</h3>
+                                                <p className="text-sm font-poppins text-neutral-500">{nextSpecialty}</p>
+                                            </div>
+                                        </div>
+                                        <div className="text-left md:text-right">
+                                            <p className="text-base font-bold font-poppins text-neutral-900">{nextDate}</p>
+                                            <p className="text-sm font-poppins text-neutral-500 flex items-center md:justify-end mt-1">
+                                                <FiClock className="mr-1" /> {nextTime}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h3 className="text-base font-bold font-poppins text-neutral-900">Dr. Sarah Jenkins</h3>
-                                        <p className="text-sm font-poppins text-neutral-500">Cardiologist</p>
+                                    <div className="mt-6 flex gap-3">
+                                        {canJoinCall(nextAppointment.date, nextAppointment.startTime) ? (
+                                            <Link
+                                                to={`/patient/call/${nextAppointment.id}`}
+                                                className="flex-1 bg-primary-500 hover:bg-primary-600 text-white font-poppins font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center"
+                                            >
+                                                <FiVideo className="w-4 h-4 mr-2" />
+                                                Join Call
+                                            </Link>
+                                        ) : (
+                                            <div
+                                                title="Available 10 minutes before the appointment"
+                                                className="flex-1 bg-primary-500 text-white font-poppins font-semibold py-2.5 rounded-lg flex items-center justify-center opacity-40 cursor-not-allowed"
+                                            >
+                                                <FiVideo className="w-4 h-4 mr-2" />
+                                                Join Call
+                                            </div>
+                                        )}
+                                        <Link
+                                            to="/patient/appointments"
+                                            className="flex-1 bg-white border border-neutral-200 hover:bg-neutral-50 text-neutral-700 font-poppins font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center"
+                                        >
+                                            Reschedule
+                                        </Link>
                                     </div>
+                                </>
+                            ) : (
+                                <div className="text-center py-8 text-neutral-400 font-poppins text-sm">
+                                    No upcoming appointments.{' '}
+                                    <Link to="/patient/browse-doctors" className="text-primary-500 font-semibold hover:text-primary-600">
+                                        Find a doctor
+                                    </Link>
                                 </div>
-                                <div className="text-left md:text-right">
-                                    <p className="text-base font-bold font-poppins text-neutral-900">Oct 24, 2023</p>
-                                    <p className="text-sm font-poppins text-neutral-500 flex items-center md:justify-end mt-1">
-                                        <FiClock className="mr-1" /> 10:00 AM - 10:30 AM
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="mt-6 flex gap-3">
-                                <Link
-                                    to="/patient/call/1"
-                                    className="flex-1 bg-primary-500 hover:bg-primary-600 text-white font-poppins font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center"
-                                >
-                                    <FiVideo className="w-4 h-4 mr-2" />
-                                    Join Call
-                                </Link>
-                                <Link
-                                    to="/patient/appointments"
-                                    className="flex-1 bg-white border border-neutral-200 hover:bg-neutral-50 text-neutral-700 font-poppins font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center"
-                                >
-                                    Reschedule
-                                </Link>
-                            </div>
+                            )}
                         </div>
                     </div>
 
@@ -155,25 +231,25 @@ function DashboardOverview() {
                             </Link>
                         </div>
 
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-center p-3 hover:bg-neutral-50 rounded-lg transition-colors border border-transparent hover:border-neutral-100">
-                                <div>
-                                    <p className="font-bold font-poppins text-sm text-neutral-900">Amoxicillin</p>
-                                    <p className="text-xs font-poppins text-neutral-500">500mg • Twice daily</p>
-                                </div>
-                                <button className="text-xs font-poppins font-semibold bg-primary-50 text-primary-700 px-3 py-1.5 rounded-full hover:bg-primary-100 transition-colors">
-                                    Refill
-                                </button>
-                            </div>
-                            <div className="flex justify-between items-center p-3 hover:bg-neutral-50 rounded-lg transition-colors border border-transparent hover:border-neutral-100">
-                                <div>
-                                    <p className="font-bold font-poppins text-sm text-neutral-900">Lisinopril</p>
-                                    <p className="text-xs font-poppins text-neutral-500">10mg • Once daily</p>
-                                </div>
-                                <button className="text-xs font-poppins font-semibold bg-primary-50 text-primary-700 px-3 py-1.5 rounded-full hover:bg-primary-100 transition-colors">
-                                    Refill
-                                </button>
-                            </div>
+                        <div className="space-y-3">
+                            {isLoadingRx ? (
+                                Array.from({ length: 2 }).map((_, i) => (
+                                    <div key={i} className="h-14 rounded-lg bg-neutral-100 animate-pulse" />
+                                ))
+                            ) : allMedications.length === 0 ? (
+                                <p className="text-sm font-poppins text-neutral-400 text-center py-4">No active medications.</p>
+                            ) : (
+                                allMedications.map((med, i) => (
+                                    <div key={i} className="flex justify-between items-center p-3 hover:bg-neutral-50 rounded-lg transition-colors border border-transparent hover:border-neutral-100">
+                                        <div>
+                                            <p className="font-bold font-poppins text-sm text-neutral-900">{med.name}</p>
+                                            <p className="text-xs font-poppins text-neutral-500">
+                                                {med.dosage}{med.unit} • {med.frequency}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
                         </div>
                     </div>
 

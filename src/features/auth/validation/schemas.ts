@@ -15,9 +15,14 @@ export const loginSchema = z.object({
 
 // Sign up validation schema
 export const signUpSchema = z.object({
-    fullName: z
+    firstName: z
         .string()
-        .min(1, 'Full name is required')
+        .min(1, 'First name is required')
+        .min(2, 'Name must be at least 2 characters')
+        .max(50, 'Name must be less than 50 characters'),
+    lastName: z
+        .string()
+        .min(1, 'Last name is required')
         .min(2, 'Name must be at least 2 characters')
         .max(50, 'Name must be less than 50 characters'),
     email: z
@@ -27,9 +32,10 @@ export const signUpSchema = z.object({
     role: z.enum(['patient', 'doctor'], {
         message: 'Please select a role',
     }),
-    specialization: z.string().optional(),
-    licenseNumber: z.string().optional(),
-    experience: z.string().optional(),
+    hospital: z.string().optional(),
+    licenseNo: z.string().optional(),
+    yearsOfPractice: z.coerce.number().optional(),
+    specialtyId: z.number().optional(),
     password: z
         .string()
         .min(1, 'Password is required')
@@ -49,25 +55,25 @@ export const signUpSchema = z.object({
     path: ['confirmPassword'],
 }).superRefine((data, ctx) => {
     if (data.role === 'doctor') {
-        if (!data.specialization || data.specialization.trim() === '') {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: 'Specialization is required for doctors',
-                path: ['specialization'],
-            });
-        }
-        if (!data.licenseNumber || data.licenseNumber.trim() === '') {
+        if (!data.licenseNo || data.licenseNo.trim() === '') {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
                 message: 'Medical license number is required',
-                path: ['licenseNumber'],
+                path: ['licenseNo'],
             });
         }
-        if (!data.experience || data.experience.trim() === '') {
+        if (!data.yearsOfPractice) {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
-                message: 'Years of experience is required',
-                path: ['experience'],
+                message: 'Years of practice is required',
+                path: ['yearsOfPractice'],
+            });
+        }
+        if (!data.specialtyId) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'Please select a specialty',
+                path: ['specialtyId'],
             });
         }
     }

@@ -13,6 +13,7 @@ interface FormDatePickerProps {
     placeholderText?: string;
     id?: string;
     disabled?: boolean;
+    filterDate?: (date: Date) => boolean;
 }
 
 function FormDatePicker({
@@ -26,6 +27,7 @@ function FormDatePicker({
     placeholderText = "Select a date",
     id,
     disabled,
+    filterDate,
 }: FormDatePickerProps) {
     return (
         <div className="w-full">
@@ -45,6 +47,7 @@ function FormDatePicker({
                     maxDate={maxDate}
                     placeholderText={placeholderText}
                     disabled={disabled}
+                    filterDate={filterDate}
                     dateFormat="MMM dd, yyyy"
                     showPopperArrow={false}
                     className={`w-full pl-10 pr-4 py-3 border ${error ? "border-red-500" : "border-neutral-300"

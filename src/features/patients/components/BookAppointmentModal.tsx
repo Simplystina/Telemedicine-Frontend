@@ -1,9 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { FiX, FiClock } from "react-icons/fi";
+import { FiX, FiClock, FiCalendar } from "react-icons/fi";
+import { toast } from "react-hot-toast";
 import FormDatePicker from "@/features/auth/components/FormDatePicker";
+import { useBookAppointment } from "@/features/appointments/hooks/useAppointments";
+import { useDoctorAvailability } from "@/features/doctor/hooks/useDoctors";
+import type { AvailabilitySlot } from "@/types";
 
 // ---- Zod Schema ----
 const appointmentSchema = z.object({
@@ -28,11 +32,50 @@ interface BookAppointmentModalProps {
     doctor: Doctor | null;
 }
 
-const AVAILABLE_TIMES = ["09:00 AM", "09:30 AM", "10:00 AM", "11:00 AM", "01:00 PM", "02:30 PM", "04:00 PM"];
+const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+function to24h(time12: string): string {
+    const [timePart, period] = time12.split(' ');
+    let [hours, minutes] = timePart.split(':').map(Number);
+    if (period === 'PM' && hours !== 12) hours += 12;
+    if (period === 'AM' && hours === 12) hours = 0;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+}
+
+function to12h(time24: string): string {
+    const [h, m] = time24.split(':').map(Number);
+    const period = h < 12 ? 'AM' : 'PM';
+    const h12 = h % 12 || 12;
+    return `${h12.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')} ${period}`;
+}
+
+function addMinutes(time24: string, mins: number): string {
+    const [h, m] = time24.split(':').map(Number);
+    const total = h * 60 + m + mins;
+    return `${Math.floor(total / 60).toString().padStart(2, '0')}:${(total % 60).toString().padStart(2, '0')}`;
+}
+
+function getSlotsForDay(slots: AvailabilitySlot[], dayOfWeek: number): string[] {
+    return slots
+        .filter(s => s.dayOfWeek === dayOfWeek)
+        .flatMap(s => {
+            const times: string[] = [];
+            let cur = s.startTime;
+            while (cur < s.endTime) {
+                times.push(to12h(cur));
+                cur = addMinutes(cur, 30);
+            }
+            return times;
+        });
+}
 
 function BookAppointmentModal({ isOpen, onClose, doctor }: BookAppointmentModalProps) {
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const { mutateAsync: bookAppointment, isPending: isSubmitting } = useBookAppointment();
     const [isSuccess, setIsSuccess] = useState(false);
+
+    const { data: availabilitySlots = [], isLoading: isLoadingAvail } = useDoctorAvailability(doctor?.id ?? '');
+    const hasAvailability = availabilitySlots.length > 0;
+    const availableDays = new Set(availabilitySlots.map(s => s.dayOfWeek));
 
     const {
         handleSubmit,
@@ -46,7 +89,15 @@ function BookAppointmentModal({ isOpen, onClose, doctor }: BookAppointmentModalP
         defaultValues: { time: "", reason: "" },
     });
 
+    const selectedDate = watch("date");
     const selectedTime = watch("time");
+
+    const currentTimeSlots = selectedDate ? getSlotsForDay(availabilitySlots, selectedDate.getDay()) : [];
+
+    // Reset time whenever the date changes
+    useEffect(() => {
+        setValue("time", "", { shouldValidate: false });
+    }, [selectedDate, setValue]);
 
     if (!isOpen || !doctor) return null;
 
@@ -56,16 +107,24 @@ function BookAppointmentModal({ isOpen, onClose, doctor }: BookAppointmentModalP
         onClose();
     };
 
-    const onSubmit = (_data: AppointmentFormData) => {
-        setIsSubmitting(true);
-        // Simulate API call — replace with real API later
-        setTimeout(() => {
-            setIsSubmitting(false);
+    const onSubmit = async (data: AppointmentFormData) => {
+        const startTime = to24h(data.time);
+        const endTime = addMinutes(startTime, 30);
+        try {
+            await bookAppointment({
+                doctorId: doctor.id,
+                date: data.date.toISOString().slice(0, 10),
+                startTime,
+                endTime,
+                reason: data.reason,
+                type: 'video',
+            });
             setIsSuccess(true);
-            setTimeout(() => {
-                handleClose();
-            }, 2000);
-        }, 1500);
+            setTimeout(() => handleClose(), 2000);
+        } catch (err: any) {
+            const message = err?.response?.data?.message ?? "Failed to book appointment. Please try again.";
+            toast.error(message);
+        }
     };
 
     return (
@@ -113,45 +172,75 @@ function BookAppointmentModal({ isOpen, onClose, doctor }: BookAppointmentModalP
                                 </div>
                             </div>
 
-                            {/* Date Selection — react-datepicker via Controller */}
-                            <Controller
-                                name="date"
-                                control={control}
-                                render={({ field }) => (
-                                    <FormDatePicker
-                                        label="Select Date"
-                                        id="appointment-date"
-                                        selected={field.value ?? null}
-                                        onChange={field.onChange}
-                                        minDate={new Date()}
-                                        placeholderText="Pick an appointment date"
-                                        error={errors.date?.message}
-                                    />
-                                )}
-                            />
-
-                            {/* Time Selection */}
+                            {/* Date Selection */}
                             <div>
-                                <label className="block font-semibold text-neutral-900 mb-2">Available Times</label>
-                                <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                                    {AVAILABLE_TIMES.map((time) => (
-                                        <button
-                                            type="button"
-                                            key={time}
-                                            onClick={() => setValue("time", time, { shouldValidate: true })}
-                                            className={`py-2 px-1 rounded-lg border font-medium text-xs sm:text-sm flex items-center justify-center transition-colors ${selectedTime === time
-                                                ? "bg-primary-50 text-primary-700 border-primary-500"
-                                                : "bg-white border-neutral-200 text-neutral-600 hover:border-neutral-300"
-                                                }`}
-                                        >
-                                            <FiClock className="mr-1.5 shrink-0" /> {time}
-                                        </button>
-                                    ))}
-                                </div>
-                                {errors.time && (
-                                    <p className="mt-1.5 text-sm text-red-600 font-poppins">{errors.time.message}</p>
+                                <Controller
+                                    name="date"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <FormDatePicker
+                                            label="Select Date"
+                                            id="appointment-date"
+                                            selected={field.value ?? null}
+                                            onChange={(date) => {
+                                                field.onChange(date);
+                                            }}
+                                            minDate={new Date()}
+                                            filterDate={(date) => availableDays.has(date.getDay())}
+                                            disabled={!hasAvailability || isLoadingAvail}
+                                            placeholderText={
+                                                isLoadingAvail
+                                                    ? "Loading availability…"
+                                                    : hasAvailability
+                                                        ? "Pick an available date"
+                                                        : "No availability set"
+                                            }
+                                            error={errors.date?.message}
+                                        />
+                                    )}
+                                />
+
+                                {/* No availability notice */}
+                                {!isLoadingAvail && !hasAvailability && (
+                                    <div className="mt-3 flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                                        <FiCalendar className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+                                        <p className="text-amber-800 text-sm font-poppins">
+                                            Dr. {doctor.name} hasn't set their availability yet. Please check back later.
+                                        </p>
+                                    </div>
                                 )}
                             </div>
+
+                            {/* Time Selection — only shown after a date is picked */}
+                            {selectedDate && (
+                                <div>
+                                    <label className="block font-semibold text-neutral-900 mb-2">
+                                        Available Times — {DAY_NAMES[selectedDate.getDay()]}
+                                    </label>
+                                    {currentTimeSlots.length > 0 ? (
+                                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                                            {currentTimeSlots.map((time) => (
+                                                <button
+                                                    type="button"
+                                                    key={time}
+                                                    onClick={() => setValue("time", time, { shouldValidate: true })}
+                                                    className={`py-2 px-1 rounded-lg border font-medium text-xs sm:text-sm flex items-center justify-center transition-colors ${selectedTime === time
+                                                        ? "bg-primary-50 text-primary-700 border-primary-500"
+                                                        : "bg-white border-neutral-200 text-neutral-600 hover:border-neutral-300"
+                                                        }`}
+                                                >
+                                                    <FiClock className="mr-1.5 shrink-0" /> {time}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-neutral-400 text-sm py-2">No time slots for this day.</p>
+                                    )}
+                                    {errors.time && (
+                                        <p className="mt-1.5 text-sm text-red-600 font-poppins">{errors.time.message}</p>
+                                    )}
+                                </div>
+                            )}
 
                             {/* Reason for Visit */}
                             <div>
@@ -188,7 +277,7 @@ function BookAppointmentModal({ isOpen, onClose, doctor }: BookAppointmentModalP
                         <button
                             type="submit"
                             form="appointment-form"
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || !hasAvailability}
                             className="flex-1 py-3 px-4 bg-primary-500 text-white rounded-xl font-poppins font-semibold hover:bg-primary-600 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                         >
                             {isSubmitting ? (

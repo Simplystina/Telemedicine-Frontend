@@ -6,17 +6,21 @@ import { loginSchema, type LoginFormData } from '../validation/schemas';
 import FormInput from '../components/FormInput';
 import PasswordInput from '../components/PasswordInput';
 import { FaUser, FaUserMd } from "react-icons/fa";
-
+import { FiLogIn, FiArrowRight } from "react-icons/fi";
+import { useAuth } from '../hooks/useAuth';
+import { useAuthStore } from '../store/useAuthStore';
 import AuthLayout from '../components/AuthLayout';
 
 function LoginPage() {
-    const navigate = useNavigate();
     const [role, setRole] = useState<'patient' | 'doctor'>('patient');
+    const { login, isLoggingIn, loginError, logout } = useAuth();
+    const user = useAuthStore((state) => state.user);
+    const navigate = useNavigate();
 
     const {
         register,
         handleSubmit,
-        formState: { errors, isSubmitting },
+        formState: { errors },
     } = useForm<LoginFormData>({
         resolver: zodResolver(loginSchema),
         defaultValues: {
@@ -28,21 +32,49 @@ function LoginPage() {
 
     const onSubmit = async (data: LoginFormData) => {
         try {
-            await new Promise((resolve) => setTimeout(resolve, 800));
-            console.log('Login:', { ...data, role });
-            // Redirect based on selected role
-            if (role === 'doctor') {
-                navigate('/doctor');
-            } else {
-                navigate('/patient');
+            await login({ email: data.email, password: data.password });
+        } catch (error: any) {
+            const message: string = error?.response?.data?.message || error?.message || '';
+            if (message.toLowerCase().includes('verif')) {
+                navigate('/auth/resend-verification', { state: { email: data.email } });
             }
-        } catch (error) {
-            console.error('Login error:', error);
         }
     };
 
+    const fullName = user ? [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email : null;
+    const dashboardPath = user ? `/${user.role}` : null;
+
     return (
         <AuthLayout>
+            {user && (
+                <div className="mb-6 bg-primary-50 border border-primary-100 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <p className="font-poppins text-sm font-semibold text-primary-900">
+                            Already signed in as {fullName}
+                        </p>
+                        <p className="font-poppins text-xs text-primary-600 mt-0.5 capitalize">
+                            {user.role} account
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                        <button
+                            onClick={() => { logout(); }}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-primary-200 text-xs font-semibold font-poppins text-primary-700 hover:bg-primary-100 transition-colors"
+                        >
+                            <FiLogIn className="w-3.5 h-3.5" />
+                            Switch account
+                        </button>
+                        <button
+                            onClick={() => navigate(dashboardPath!)}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-primary-500 text-white text-xs font-semibold font-poppins hover:bg-primary-600 transition-colors"
+                        >
+                            Go to dashboard
+                            <FiArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <div className="text-center mb-8">
                 <h2 className="font-archivo text-3xl font-bold text-neutral-900 mb-2">
                     Welcome Back
@@ -54,6 +86,13 @@ function LoginPage() {
 
             {/* Login Form */}
             <div className="bg-white rounded-2xl shadow-xl p-8">
+                {loginError && (
+                    <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+                        <p className="font-poppins text-sm text-red-600 font-medium">
+                            {loginError.response?.data?.message || loginError.message || 'Login failed. Please check your credentials.'}
+                        </p>
+                    </div>
+                )}
                 {/* Role Selector */}
                 <div className="flex p-1 bg-neutral-100 rounded-xl mb-6">
                     <button
@@ -109,8 +148,7 @@ function LoginPage() {
                                 className="w-4 h-4 text-primary-500 border-neutral-300 rounded focus:ring-2 focus:ring-primary-500"
                             />
                             <span className="ml-2 font-inter text-sm text-neutral-700">
-                                Remember me '
-                                '
+                                Remember me
                             </span>
                         </label>
                         <Link
@@ -124,10 +162,10 @@ function LoginPage() {
                     {/* Submit Button */}
                     <button
                         type="submit"
-                        disabled={isSubmitting}
+                        disabled={isLoggingIn}
                         className="w-full bg-primary-500 hover:bg-primary-600 disabled:bg-primary-300 disabled:cursor-not-allowed text-white font-inter text-base font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg active:scale-95 disabled:active:scale-100"
                     >
-                        {isSubmitting ? (
+                        {isLoggingIn ? (
                             <span className="flex items-center justify-center">
                                 <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

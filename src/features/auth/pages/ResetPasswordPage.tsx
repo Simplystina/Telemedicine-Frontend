@@ -1,23 +1,24 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, Navigate } from 'react-router-dom';
 import Logo from '@assets/logo.png';
 import { resetPasswordSchema, type ResetPasswordFormData } from '../validation/schemas';
 import PasswordInput from '../components/PasswordInput';
-
+import { useAuth } from '../hooks/useAuth';
 import AuthLayout from '../components/AuthLayout';
 
 function ResetPasswordPage() {
     const [searchParams] = useSearchParams();
     const token = searchParams.get('token');
     const [isSubmitted, setIsSubmitted] = useState(false);
+    const { resetPassword, isResettingPassword, resetPasswordError } = useAuth();
 
     const {
         register,
         handleSubmit,
         watch,
-        formState: { errors, isSubmitting },
+        formState: { errors },
     } = useForm<ResetPasswordFormData>({
         resolver: zodResolver(resetPasswordSchema),
         defaultValues: {
@@ -33,14 +34,16 @@ function ResetPasswordPage() {
     const hasUpperCase = /[A-Z]/.test(password || '');
     const hasNumber = /[0-9]/.test(password || '');
 
+    if (!token) {
+        return <Navigate to="/auth/forgot-password" replace />;
+    }
+
     const onSubmit = async (data: ResetPasswordFormData) => {
         try {
-            // Simulate API call
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-            console.log('Reset password with token:', token, data);
+            await resetPassword({ token, password: data.password });
             setIsSubmitted(true);
-        } catch (error) {
-            console.error('Reset password error:', error);
+        } catch {
+            // Error displayed via resetPasswordError banner
         }
     };
 
@@ -69,6 +72,14 @@ function ResetPasswordPage() {
             <div className="bg-white rounded-2xl shadow-xl p-8">
                 {!isSubmitted ? (
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                        {resetPasswordError && (
+                            <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+                                <p className="font-poppins text-sm text-red-600 font-medium">
+                                    {resetPasswordError.response?.data?.message || resetPasswordError.message || 'Something went wrong. Please try again.'}
+                                </p>
+                            </div>
+                        )}
+
                         {/* New Password Input */}
                         <PasswordInput
                             label="New Password"
@@ -118,10 +129,10 @@ function ResetPasswordPage() {
                         {/* Submit Button */}
                         <button
                             type="submit"
-                            disabled={isSubmitting}
+                            disabled={isResettingPassword}
                             className="w-full bg-primary-500 hover:bg-primary-600 disabled:bg-primary-300 disabled:cursor-not-allowed text-white font-inter text-base font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg active:scale-95 disabled:active:scale-100"
                         >
-                            {isSubmitting ? (
+                            {isResettingPassword ? (
                                 <span className="flex items-center justify-center">
                                     <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

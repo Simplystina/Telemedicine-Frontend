@@ -14,18 +14,18 @@ import {
     FiCheck, FiPenTool
 } from "react-icons/fi";
 import ConsultationNoteModal from "../components/ConsultationNoteModal";
+import { useAppointment } from "@/features/appointments/hooks/useAppointments";
+import {
+    useConsultationToken,
+    useCreateSession,
+    useStartSession,
+    useEndSession,
+} from "@/features/consultations/hooks/useConsultations";
+import { useAuthStore } from "@/features/auth/store/useAuthStore";
 
 // ── Agora config ───────────────────────────────────────────────────────────
 const APP_ID = import.meta.env.VITE_AGORA_APP_ID as string;
-const TOKEN = (import.meta.env.VITE_AGORA_TEMP_TOKEN as string) || null;
-
-// ── Mock patient info keyed by appointmentId ──────────────────────────────
-const PATIENT_INFO: Record<string, { name: string; condition: string }> = {
-    "a1": { name: "Jane Doe", condition: "Hypertension" },
-    "a2": { name: "Emeka Eze", condition: "Type 2 Diabetes" },
-    "a3": { name: "Aisha Bello", condition: "Anxiety Disorder" },
-    "a4": { name: "Chidi Okeke", condition: "Heart Arrhythmia" },
-};
+const DEV_TOKEN = (import.meta.env.VITE_AGORA_TEMP_TOKEN as string)?.trim() || null;
 
 type CallPhase = "connecting" | "waiting" | "in-call" | "ended" | "error";
 
@@ -44,8 +44,19 @@ function DoctorVideoCallRoom() {
     const { appointmentId } = useParams<{ appointmentId: string }>();
     const navigate = useNavigate();
 
-    const patient = PATIENT_INFO[appointmentId ?? "a1"] ?? { name: "Patient", condition: "Consultation" };
-    const channelName = "appointment-1";
+    const { user } = useAuthStore();
+    const { data: appointmentData } = useAppointment(appointmentId ?? '');
+    const { data: tokenData } = useConsultationToken(appointmentId ?? '');
+    const { mutate: createSession } = useCreateSession();
+    const { mutate: startSession } = useStartSession();
+    const { mutate: endSession } = useEndSession();
+
+    const patientFullName = [appointmentData?.patient?.firstName, appointmentData?.patient?.lastName].filter(Boolean).join(' ');
+    const patient = {
+        name: patientFullName || 'Patient',
+        condition: appointmentData?.reason ?? 'Consultation',
+    };
+    const doctorDisplayName = user?.firstName ? `Dr. ${user.firstName}` : 'Doctor';
 
     // ── State ──────────────────────────────────────────────────────────────
     const [phase, setPhase] = useState<CallPhase>("connecting");
@@ -75,6 +86,14 @@ function DoctorVideoCallRoom() {
     const localAudioTrack = useRef<IMicrophoneAudioTrack | null>(null);
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+    // ── Create session when doctor enters the room ─────────────────────────
+    useEffect(() => {
+        if (appointmentId) {
+            createSession(appointmentId);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [appointmentId]);
+
     // ── Join channel ───────────────────────────────────────────────────────
     useEffect(() => {
         if (!APP_ID || APP_ID === "YOUR_AGORA_APP_ID_HERE") {
@@ -82,6 +101,11 @@ function DoctorVideoCallRoom() {
             setPhase("error");
             return;
         }
+
+        const agoraToken = tokenData?.token ?? DEV_TOKEN;
+        const channelName = tokenData?.roomName ?? `appointment-${appointmentId}`;
+
+        if (!agoraToken && !tokenData) return;
 
         const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
         clientRef.current = client;
@@ -106,6 +130,18 @@ function DoctorVideoCallRoom() {
         client.on("user-left", () => {
             setRemoteUser(null);
             setPhase("waiting");
+        });
+
+        client.on("token-privilege-will-expire", async () => {
+            try {
+                const res = await consultationApi.getSessionToken(appointmentId ?? '');
+                await client.renewToken(res.token);
+            } catch { /* if renewal fails, the did-expire event will handle it */ }
+        });
+
+        client.on("token-privilege-did-expire", () => {
+            setErrorMsg("Session token expired. The call has ended.");
+            setPhase("error");
         });
 
         const join = async () => {
@@ -139,7 +175,7 @@ function DoctorVideoCallRoom() {
                 }
 
                 try {
-                    await client.join(APP_ID, channelName, TOKEN, 0);
+                    await client.join(APP_ID, channelName, agoraToken, 0);
                 } catch (joinErr: unknown) {
                     const message = (joinErr as { message?: string })?.message ?? "";
                     setErrorMsg(`Could not connect to call server: ${message || "Check your internet connection."}`);
@@ -150,6 +186,7 @@ function DoctorVideoCallRoom() {
                 }
 
                 await client.publish([audioTrack, videoTrack]);
+                if (appointmentId) startSession(appointmentId);
                 setPhase("waiting");
             } catch (err: unknown) {
                 const message = (err as { message?: string })?.message ?? "";
@@ -166,7 +203,7 @@ function DoctorVideoCallRoom() {
             client.leave();
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [tokenData]);
 
     useEffect(() => {
         if (remoteUser?.videoTrack && remoteVideoRef.current) {
@@ -200,6 +237,7 @@ function DoctorVideoCallRoom() {
         localAudioTrack.current?.close();
         localVideoTrack.current?.close();
         await clientRef.current?.leave();
+        if (appointmentId) endSession(appointmentId);
         setPhase("ended");
         setIsNoteModalOpen(true);
     };
@@ -268,7 +306,7 @@ function DoctorVideoCallRoom() {
                 </div>
                 <div className="flex items-center space-x-3">
                     <span className="hidden sm:block text-xs font-poppins font-semibold text-primary-400 bg-primary-900/40 px-3 py-1 rounded-full">
-                        Dr. Marcus Obi
+                        {doctorDisplayName}
                     </span>
                     <button
                         onClick={toggleFullscreen}
@@ -502,6 +540,7 @@ function DoctorVideoCallRoom() {
                 isOpen={isNoteModalOpen}
                 onClose={handleCloseModal}
                 patientName={patient.name}
+                appointmentId={appointmentId ?? ''}
             />
         </div>
     );

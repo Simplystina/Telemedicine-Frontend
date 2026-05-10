@@ -5,17 +5,18 @@ import { Link } from 'react-router-dom';
 import Logo from '@assets/logo.png';
 import { forgotPasswordSchema, type ForgotPasswordFormData } from '../validation/schemas';
 import FormInput from '../components/FormInput';
-
+import { useAuth } from '../hooks/useAuth';
 import AuthLayout from '../components/AuthLayout';
 
 function ForgotPasswordPage() {
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [submittedEmail, setSubmittedEmail] = useState('');
+    const { forgotPassword, isSendingReset, forgotPasswordError } = useAuth();
 
     const {
         register,
         handleSubmit,
-        formState: { errors, isSubmitting },
+        formState: { errors },
         reset,
     } = useForm<ForgotPasswordFormData>({
         resolver: zodResolver(forgotPasswordSchema),
@@ -26,13 +27,11 @@ function ForgotPasswordPage() {
 
     const onSubmit = async (data: ForgotPasswordFormData) => {
         try {
-            // Simulate API call
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-            console.log('Forgot password for:', data.email);
+            await forgotPassword(data.email);
             setSubmittedEmail(data.email);
             setIsSubmitted(true);
-        } catch (error) {
-            console.error('Forgot password error:', error);
+        } catch {
+            // Error displayed via forgotPasswordError banner
         }
     };
 
@@ -67,6 +66,14 @@ function ForgotPasswordPage() {
             <div className="bg-white rounded-2xl shadow-xl p-8">
                 {!isSubmitted ? (
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                        {forgotPasswordError && (
+                            <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+                                <p className="font-poppins text-sm text-red-600 font-medium">
+                                    {forgotPasswordError.response?.data?.message || forgotPasswordError.message || 'Something went wrong. Please try again.'}
+                                </p>
+                            </div>
+                        )}
+
                         {/* Email Input */}
                         <FormInput
                             label="Email Address"
@@ -80,10 +87,10 @@ function ForgotPasswordPage() {
                         {/* Submit Button */}
                         <button
                             type="submit"
-                            disabled={isSubmitting}
+                            disabled={isSendingReset}
                             className="w-full bg-primary-500 hover:bg-primary-600 disabled:bg-primary-300 disabled:cursor-not-allowed text-white font-inter text-base font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg active:scale-95 disabled:active:scale-100"
                         >
-                            {isSubmitting ? (
+                            {isSendingReset ? (
                                 <span className="flex items-center justify-center">
                                     <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

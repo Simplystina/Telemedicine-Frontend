@@ -1,29 +1,115 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FiCheck, FiCalendar } from "react-icons/fi";
+import { useMyAvailability, useUpdateAvailability } from "@/features/doctor/hooks/useDoctors";
+import type { AvailabilitySlot } from "@/types";
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 // 30-minute slots from 08:00 AM to 06:30 PM
 const TIME_SLOTS = [
+    "12:00 AM", "12:30 AM", "01:00 AM", "01:30 AM", "02:00 AM", "02:30 AM", "03:00 AM", "03:30 AM",
+    "04:00 AM", "04:30 AM", "05:00 AM", "05:30 AM", "06:00 AM", "06:30 AM", "07:00 AM", "07:30 AM",
     "08:00 AM", "08:30 AM", "09:00 AM", "09:30 AM", "10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM",
     "12:00 PM", "12:30 PM", "01:00 PM", "01:30 PM", "02:00 PM", "02:30 PM", "03:00 PM", "03:30 PM",
-    "04:00 PM", "04:30 PM", "05:00 PM", "05:30 PM", "06:00 PM", "06:30 PM"
+    "04:00 PM", "04:30 PM", "05:00 PM", "05:30 PM", "06:00 PM", "06:30 PM", "07:00 PM", "07:30 PM",
+    "08:00 PM", "08:30 PM", "09:00 PM", "09:30 PM", "10:00 PM", "10:30 PM", "11:00 PM", "11:30 PM"
 ];
 
-// Initial state: Array of strings representing available start times for each day
-const initialSchedule: Record<string, string[]> = {
-    Monday: ["09:00 AM", "09:30 AM", "10:00 AM", "10:30 AM", "11:00 AM", "02:00 PM", "02:30 PM", "03:00 PM"],
-    Tuesday: ["09:00 AM", "09:30 AM", "10:00 AM", "10:30 AM", "11:00 AM", "02:00 PM", "02:30 PM", "03:00 PM"],
-    Wednesday: ["10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM", "12:00 PM", "01:00 PM", "02:00 PM"],
-    Thursday: ["09:00 AM", "09:30 AM", "10:00 AM", "10:30 AM", "11:00 AM", "02:00 PM", "02:30 PM", "03:00 PM"],
-    Friday: ["09:00 AM", "09:30 AM", "10:00 AM", "10:30 AM", "11:00 AM"],
-    Saturday: [],
-    Sunday: [],
+const DAY_TO_DOW: Record<string, number> = {
+    Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3,
+    Thursday: 4, Friday: 5, Saturday: 6,
+};
+const DOW_TO_DAY: Record<number, string> = {
+    0: "Sunday", 1: "Monday", 2: "Tuesday", 3: "Wednesday",
+    4: "Thursday", 5: "Friday", 6: "Saturday",
 };
 
+function to24h(time12: string): string {
+    const [time, period] = time12.split(" ");
+    let [hours, minutes] = time.split(":").map(Number);
+    if (period === "AM") {
+        if (hours === 12) hours = 0;
+    } else {
+        if (hours !== 12) hours += 12;
+    }
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+function to12h(time24: string): string {
+    let [hours, minutes] = time24.split(":").map(Number);
+    const period = hours < 12 ? "AM" : "PM";
+    if (hours === 0) hours = 12;
+    else if (hours > 12) hours -= 12;
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")} ${period}`;
+}
+
+function add30min(time24: string): string {
+    let [hours, minutes] = time24.split(":").map(Number);
+    minutes += 30;
+    if (minutes >= 60) { minutes -= 60; hours += 1; }
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+function isConsecutive(slot1: string, slot2: string): boolean {
+    return add30min(to24h(slot1)) === to24h(slot2);
+}
+
+function generateSlotsFromRange(startTime24: string, endTime24: string): string[] {
+    const slots: string[] = [];
+    let current = startTime24;
+    while (current < endTime24) {
+        slots.push(to12h(current));
+        current = add30min(current);
+    }
+    return slots;
+}
+
+function apiSlotsToSchedule(apiSlots: AvailabilitySlot[]): Record<string, string[]> {
+    const schedule: Record<string, string[]> = Object.fromEntries(DAYS.map(d => [d, []]));
+    apiSlots.forEach(slot => {
+        const day = DOW_TO_DAY[slot.dayOfWeek];
+        if (!day) return;
+        schedule[day] = [...schedule[day], ...generateSlotsFromRange(slot.startTime, slot.endTime)];
+    });
+    DAYS.forEach(day => schedule[day].sort());
+    return schedule;
+}
+
+function scheduleToApiSlots(schedule: Record<string, string[]>): AvailabilitySlot[] {
+    const result: AvailabilitySlot[] = [];
+    DAYS.forEach(day => {
+        const daySlots = [...schedule[day]].sort();
+        if (daySlots.length === 0) return;
+        const dayOfWeek = DAY_TO_DOW[day];
+        let i = 0;
+        while (i < daySlots.length) {
+            const startTime = to24h(daySlots[i]);
+            let j = i;
+            while (j + 1 < daySlots.length && isConsecutive(daySlots[j], daySlots[j + 1])) {
+                j++;
+            }
+            const endTime = add30min(to24h(daySlots[j]));
+            result.push({ dayOfWeek, startTime, endTime });
+            i = j + 1;
+        }
+    });
+    return result;
+}
+
+const emptySchedule = () => Object.fromEntries(DAYS.map(d => [d, [] as string[]]));
+
 function DoctorAvailability() {
-    const [schedule, setSchedule] = useState(initialSchedule);
+    const { data: apiSlots } = useMyAvailability();
+    const { mutate: updateAvailability, isPending } = useUpdateAvailability();
+
+    const [schedule, setSchedule] = useState<Record<string, string[]>>(emptySchedule);
     const [saved, setSaved] = useState(false);
+
+    useEffect(() => {
+        if (apiSlots) {
+            setSchedule(apiSlotsToSchedule(apiSlots));
+        }
+    }, [apiSlots]);
 
     const toggleSlot = (day: string, slot: string) => {
         setSchedule(prev => {
@@ -37,8 +123,15 @@ function DoctorAvailability() {
     };
 
     const handleSave = () => {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2500);
+        updateAvailability(
+            { slots: scheduleToApiSlots(schedule) },
+            {
+                onSuccess: () => {
+                    setSaved(true);
+                    setTimeout(() => setSaved(false), 2500);
+                },
+            }
+        );
     };
 
     const clearDay = (day: string) => {
@@ -61,12 +154,13 @@ function DoctorAvailability() {
                 </div>
                 <button
                     onClick={handleSave}
-                    className={`px-6 py-2.5 rounded-xl font-poppins font-semibold text-sm transition-all flex items-center justify-center space-x-2 shadow-sm ${saved
+                    disabled={isPending}
+                    className={`px-6 py-2.5 rounded-xl font-poppins font-semibold text-sm transition-all flex items-center justify-center space-x-2 shadow-sm disabled:opacity-60 ${saved
                         ? "bg-green-500 text-white"
                         : "bg-primary-500 text-white hover:bg-primary-600 active:scale-95"
                         }`}
                 >
-                    {saved ? <><FiCheck className="w-4 h-4" /><span>Saved!</span></> : <span>Save Availability</span>}
+                    {saved ? <><FiCheck className="w-4 h-4" /><span>Saved!</span></> : <span>{isPending ? 'Saving…' : 'Save Availability'}</span>}
                 </button>
             </div>
 
@@ -143,5 +237,3 @@ function DoctorAvailability() {
 }
 
 export default DoctorAvailability;
-
-

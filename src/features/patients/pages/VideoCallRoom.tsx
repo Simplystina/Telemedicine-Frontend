@@ -13,26 +13,14 @@ import {
     FiWifi, FiAlertCircle
 } from "react-icons/fi";
 import { FaUserDoctor } from "react-icons/fa6";
-
+import { useAppointment } from "@/features/appointments/hooks/useAppointments";
+import { useConsultationToken } from "@/features/consultations/hooks/useConsultations";
 
 // ── Agora config ──────────────────────────────────────────────────────────
 const APP_ID = import.meta.env.VITE_AGORA_APP_ID as string;
-// For development: generate a Temp Token in the Agora console 
-// In production your backend generates a token dynamically.
-const TOKEN = (import.meta.env.VITE_AGORA_TEMP_TOKEN as string) || null;
-
-// ── Mock doctor info keyed by appointmentId ───────────────────────────────
-const DOCTOR_INFO: Record<string, { name: string; specialty: string; imageUrl?: string }> = {
-    "1": {
-        name: "Dr. Sarah Jenkins",
-        specialty: "Cardiologist",
-        imageUrl: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=500&auto=format&fit=crop&q=60",
-    },
-    "2": {
-        name: "Dr. Marcus Johnson",
-        specialty: "General Physician",
-    },
-};
+// DEV fallback: set VITE_AGORA_TEMP_TOKEN in .env.local for local testing.
+// In production the backend issues a token via /consultations/:id/session/token.
+const DEV_TOKEN = (import.meta.env.VITE_AGORA_TEMP_TOKEN as string)?.trim() || null;
 
 type CallPhase = "connecting" | "waiting" | "in-call" | "ended" | "error";
 
@@ -52,10 +40,14 @@ function VideoCallRoom() {
     const { appointmentId } = useParams<{ appointmentId: string }>();
     const navigate = useNavigate();
 
-    const doctor = DOCTOR_INFO[appointmentId ?? "1"] ?? DOCTOR_INFO["1"];
-    // DEV: use a fixed channel so the single temp token works for all appointment IDs.
-    // TODO: replace with a backend-generated token per appointment in production.
-    const channelName = "appointment-1";
+    const { data: appointmentData } = useAppointment(appointmentId ?? '');
+    const { data: tokenData } = useConsultationToken(appointmentId ?? '');
+    const doctorFullName = [appointmentData?.doctor?.firstName, appointmentData?.doctor?.lastName].filter(Boolean).join(' ');
+    const doctor = {
+        name: doctorFullName ? `Dr. ${doctorFullName}` : 'Doctor',
+        specialty: appointmentData?.doctor?.specialty?.name ?? 'Specialist',
+        imageUrl: undefined as string | undefined,
+    };
 
     // ── State ──────────────────────────────────────────────────────────────
     const [phase, setPhase] = useState<CallPhase>("connecting");
@@ -82,6 +74,13 @@ function VideoCallRoom() {
             setPhase("error");
             return;
         }
+
+        // Use real backend token when available; fall back to dev env var
+        const agoraToken = tokenData?.token ?? DEV_TOKEN;
+        const channelName = tokenData?.roomName ?? `appointment-${appointmentId}`;
+
+        // If no token source at all, wait for the API response
+        if (!agoraToken && !tokenData) return;
 
         const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
         clientRef.current = client;
@@ -147,7 +146,7 @@ function VideoCallRoom() {
 
                 // ── Step 2: Join the Agora channel ──
                 try {
-                    await client.join(APP_ID, channelName, TOKEN, 0);
+                    await client.join(APP_ID, channelName, agoraToken, 0);
                 } catch (joinErr: unknown) {
                     const message = (joinErr as { message?: string })?.message ?? "";
                     console.error("Agora join error:", joinErr);
@@ -179,7 +178,7 @@ function VideoCallRoom() {
             client.leave();
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [tokenData]);
 
     // ── Play remote video when remoteUser changes ──────────────────────────
     useEffect(() => {

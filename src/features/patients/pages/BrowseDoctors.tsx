@@ -1,102 +1,31 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FiSearch, FiFilter } from "react-icons/fi";
 import DoctorCard from "@features/patients/components/DoctorCard";
 import BookAppointmentModal from "../components/BookAppointmentModal";
 import DoctorProfileModal, { type DoctorProfile, type PastVisit } from "../components/DoctorProfileModal";
+import { useDoctors, useSpecialties } from "@/features/doctor/hooks/useDoctors";
+import type { Doctor } from "@/types";
 
 // -- Types --
 interface DoctorData extends DoctorProfile {
     visitHistory: PastVisit[];
 }
 
-// -- Mock Data --
-const MOCK_DOCTORS: DoctorData[] = [
-    {
-        id: "1",
-        name: "Sarah Jenkins",
-        specialty: "Cardiologist",
-        rating: 4.9,
-        experience: "10 yrs",
-        hospital: "Mercy General Hospital",
-        bio: "Dr. Sarah Jenkins is a board-certified cardiologist with over 10 years of experience in diagnosing and treating heart conditions. She specialises in preventive cardiology and heart failure management.",
-        qualifications: ["MBBS, University of Lagos", "FWACP (Cardiology)", "Fellowship, Johns Hopkins"],
-        languages: ["English", "Yoruba"],
-        imageUrl: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=500&auto=format&fit=crop&q=60",
-        visitHistory: [
-            { date: "Oct 24, 2023", reason: "Routine cardiac check-up", status: "Completed" },
-            { date: "Jul 20, 2023", reason: "Annual comprehensive metabolic panel", status: "Completed" },
-        ],
-    },
-    {
-        id: "2",
-        name: "David Chen",
-        specialty: "Dermatologist",
-        rating: 4.7,
-        experience: "8 yrs",
-        hospital: "ClearSkin Dermatology",
-        bio: "Dr. David Chen specialises in both medical and cosmetic dermatology, with a strong focus on eczema, acne, and skin cancer screening.",
-        qualifications: ["MBBS, Ahmadu Bello University", "Diploma in Dermatology (UK)"],
-        languages: ["English", "Mandarin"],
-        imageUrl: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=500&auto=format&fit=crop&q=60",
-        visitHistory: [
-            { date: "Aug 02, 2023", reason: "Dermatology consultation — eczema", status: "Completed" },
-        ],
-    },
-    {
-        id: "3",
-        name: "Emily Clark",
-        specialty: "Pediatrician",
-        rating: 5.0,
-        experience: "15 yrs",
-        hospital: "Oak Clinical Associates",
-        bio: "Dr. Emily Clark is a highly experienced pediatrician passionate about child wellness, vaccinations, and early development monitoring.",
-        qualifications: ["MBBS, University of Ibadan", "FWACP (Paediatrics)", "MSc Child Health"],
-        languages: ["English", "Igbo"],
-        imageUrl: "https://images.unsplash.com/photo-1594824436998-dd40e4f29d4b?w=500&auto=format&fit=crop&q=60",
-        visitHistory: [
-            { date: "Sep 15, 2023", reason: "Upper respiratory tract infection", status: "Completed" },
-        ],
-    },
-    {
-        id: "4",
-        name: "Marcus Johnson",
-        specialty: "General Physician",
-        rating: 4.6,
-        experience: "5 yrs",
-        hospital: "Lagos Island General Hospital",
-        bio: "Dr. Marcus Johnson is a general practitioner offering comprehensive primary care for adults, including chronic disease management and preventive health services.",
-        qualifications: ["MBBS, University of Benin", "MWACP (General Practice)"],
-        languages: ["English", "Pidgin"],
+function mapDoctor(d: Doctor): DoctorData {
+    return {
+        id: d.id,
+        name: [d.firstName, d.lastName].filter(Boolean).join(' ') || 'Unknown Doctor',
+        specialty: d.specialty?.name ?? '',
+        rating: d.rating ?? 0,
+        experience: d.yearsOfPractice?.toString() ?? '',
+        hospital: d.hospital ?? '',
+        bio: d.bio ?? '',
+        qualifications: [],
+        languages: [],
+        imageUrl: undefined,
         visitHistory: [],
-    },
-    {
-        id: "5",
-        name: "Priya Patel",
-        specialty: "Psychiatrist",
-        rating: 4.8,
-        experience: "12 yrs",
-        hospital: "MindCare Mental Health Clinic",
-        bio: "Dr. Priya Patel is a consultant psychiatrist specialising in anxiety disorders, depression, and PTSD, with a compassionate and evidence-based approach.",
-        qualifications: ["MBBS, Obafemi Awolowo University", "FRCPsych (UK)"],
-        languages: ["English", "Hindi"],
-        visitHistory: [],
-    },
-    {
-        id: "6",
-        name: "Anas Malik",
-        specialty: "Neurologist",
-        rating: 4.9,
-        experience: "20 yrs",
-        hospital: "NeuroCare Specialist Clinic",
-        bio: "Dr. Anas Malik is a senior neurologist with two decades of experience managing stroke, epilepsy, migraine, and neurodegenerative diseases.",
-        qualifications: ["MBBS, University of Jos", "FWACP (Neurology)", "Fellowship, UCL London"],
-        languages: ["English", "Hausa", "Arabic"],
-        imageUrl: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=500&auto=format&fit=crop&q=60",
-        visitHistory: [],
-    }
-];
-
-const SPECIALTIES = ["All", "General Physician", "Cardiologist", "Dermatologist", "Pediatrician", "Psychiatrist", "Neurologist"];
+    };
+}
 
 function BrowseDoctors() {
     // ---- MOCK SUBSCRIPTION STATE ----
@@ -105,24 +34,32 @@ function BrowseDoctors() {
     // ---------------------------------
 
     const [searchTerm, setSearchTerm] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
     const [selectedSpecialty, setSelectedSpecialty] = useState("All");
+
+    const { data: specialties = [] } = useSpecialties();
     const [profileDoctor, setProfileDoctor] = useState<DoctorData | null>(null);
     const [bookingDoctor, setBookingDoctor] = useState<DoctorData | null>(null);
 
-    const filteredDoctors = MOCK_DOCTORS.filter(doc => {
-        const matchesSearch = doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            doc.specialty.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesSpecialty = selectedSpecialty === "All" || doc.specialty === selectedSpecialty;
-        return matchesSearch && matchesSpecialty;
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedSearch(searchTerm), 400);
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
+
+    const { data, isLoading, isError } = useDoctors({
+        search: debouncedSearch || undefined,
+        specialty: selectedSpecialty !== "All" ? selectedSpecialty : undefined,
     });
 
+    const doctors: DoctorData[] = (data?.doctors ?? []).map(mapDoctor);
+
     const handleViewProfile = (id: string) => {
-        const doc = MOCK_DOCTORS.find(d => d.id === id);
+        const doc = doctors.find(d => d.id === id);
         if (doc) setProfileDoctor(doc);
     };
 
     const handleBook = (id: string) => {
-        const doc = MOCK_DOCTORS.find(d => d.id === id);
+        const doc = doctors.find(d => d.id === id);
         if (doc) { setProfileDoctor(null); setBookingDoctor(doc); }
     };
 
@@ -155,16 +92,16 @@ function BrowseDoctors() {
 
             {/* Specialties Filter Chips */}
             <div className="flex overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 hide-scrollbar gap-2">
-                {SPECIALTIES.map(specialty => (
+                {["All", ...specialties.map(s => s.name)].map(name => (
                     <button
-                        key={specialty}
-                        onClick={() => setSelectedSpecialty(specialty)}
-                        className={`whitespace-nowrap px-4 py-2 rounded-full font-poppins text-sm font-semibold transition-colors border ${selectedSpecialty === specialty
+                        key={name}
+                        onClick={() => setSelectedSpecialty(name)}
+                        className={`whitespace-nowrap px-4 py-2 rounded-full font-poppins text-sm font-semibold transition-colors border ${selectedSpecialty === name
                             ? "bg-neutral-900 text-white border-neutral-900"
                             : "bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50"
                             }`}
                     >
-                        {specialty}
+                        {name}
                     </button>
                 ))}
             </div>
@@ -183,34 +120,48 @@ function BrowseDoctors() {
 
             {/* Results Grid */}
             <div>
-                <p className="font-poppins text-sm font-medium text-neutral-500 mb-4">
-                    Showing {filteredDoctors.length} specialists
-                </p>
-
-                {filteredDoctors.length > 0 ? (
+                {isLoading ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {filteredDoctors.map(doctor => (
-                            <DoctorCard
-                                key={doctor.id}
-                                {...doctor}
-                                visitCount={doctor.visitHistory.filter(v => v.status === "Completed").length}
-                                isSubscribed={isSubscribed}
-                                freeConsultationsRemaining={freeConsultationsRemaining}
-                                onViewProfile={handleViewProfile}
-                                onBook={handleBook}
-                            />
+                        {Array.from({ length: 8 }).map((_, i) => (
+                            <div key={i} className="h-64 bg-neutral-100 rounded-2xl animate-pulse" />
                         ))}
                     </div>
-                ) : (
+                ) : isError ? (
                     <div className="text-center py-16 bg-white border border-neutral-200 rounded-2xl">
-                        <p className="text-neutral-500 font-poppins">No doctors found matching your criteria.</p>
-                        <button
-                            onClick={() => { setSearchTerm(""); setSelectedSpecialty("All"); }}
-                            className="mt-4 text-primary-600 font-semibold font-poppins hover:text-primary-700"
-                        >
-                            Clear Filters
-                        </button>
+                        <p className="text-neutral-500 font-poppins">Failed to load doctors. Please try again.</p>
                     </div>
+                ) : (
+                    <>
+                        <p className="font-poppins text-sm font-medium text-neutral-500 mb-4">
+                            Showing {doctors.length} specialists
+                        </p>
+
+                        {doctors.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                {doctors.map(doctor => (
+                                    <DoctorCard
+                                        key={doctor.id}
+                                        {...doctor}
+                                        visitCount={doctor.visitHistory.filter(v => v.status === "Completed").length}
+                                        isSubscribed={isSubscribed}
+                                        freeConsultationsRemaining={freeConsultationsRemaining}
+                                        onViewProfile={handleViewProfile}
+                                        onBook={handleBook}
+                                    />
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-16 bg-white border border-neutral-200 rounded-2xl">
+                                <p className="text-neutral-500 font-poppins">No doctors found matching your criteria.</p>
+                                <button
+                                    onClick={() => { setSearchTerm(""); setSelectedSpecialty("All"); }}
+                                    className="mt-4 text-primary-600 font-semibold font-poppins hover:text-primary-700"
+                                >
+                                    Clear Filters
+                                </button>
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
 

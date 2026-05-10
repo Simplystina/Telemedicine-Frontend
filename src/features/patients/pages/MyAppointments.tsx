@@ -4,96 +4,58 @@ import { FaUserDoctor } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
 import VisitSummaryModal, { type VisitSummary } from "../components/VisitSummaryModal";
 import RescheduleModal, { type AppointmentToReschedule } from "../components/RescheduleModal";
+import BookAppointmentModal from "../components/BookAppointmentModal";
+import { useAppointments, useCancelAppointment } from "@/features/appointments/hooks/useAppointments";
+import type { Appointment } from "@/types";
 
-// ---- Types ----
-interface UpcomingAppointment {
+// ---- Display Shape ----
+interface DisplayAppointment {
     id: string;
+    doctorId: string;
     doctorName: string;
     specialty: string;
     date: string;
     time: string;
     status: string;
-    imageUrl?: string;
+    rawDate: string;
+    rawStartTime: string;
 }
 
-// Mock Appointments Data
-const UPCOMING_APPOINTMENTS: UpcomingAppointment[] = [
-    {
-        id: "1",
-        doctorName: "Dr. Sarah Jenkins",
-        specialty: "Cardiologist",
-        date: "Oct 24, 2023",
-        time: "10:00 AM - 10:30 AM",
-        status: "Confirmed",
-        imageUrl: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=500&auto=format&fit=crop&q=60"
-    },
-    {
-        id: "2",
-        doctorName: "Dr. Marcus Johnson",
-        specialty: "General Physician",
-        date: "Oct 28, 2023",
-        time: "02:00 PM - 02:45 PM",
-        status: "Pending",
-    }
-];
+function formatDate(dateStr: string): string {
+    return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', {
+        month: 'short', day: 'numeric', year: 'numeric',
+    });
+}
 
-const PAST_APPOINTMENTS: Array<{
-    id: string;
-    doctorName: string;
-    specialty: string;
-    date: string;
-    time: string;
-    status: string;
-    imageUrl?: string;
-    visitSummary?: VisitSummary;
-}> = [
-        {
-            id: "3",
-            doctorName: "Dr. Emily Clark",
-            specialty: "Pediatrician",
-            date: "Sep 15, 2023",
-            time: "11:00 AM - 11:30 AM",
-            status: "Completed",
-            imageUrl: "https://images.unsplash.com/photo-1594824436998-dd40e4f29d4b?w=500&auto=format&fit=crop&q=60",
-            visitSummary: {
-                recordTitle: "Visit Summary — Sep 15, 2023",
-                doctorName: "Dr. Emily Clark",
-                facilityName: "Oak Clinical Associates",
-                visitDate: "Sep 15, 2023",
-                diagnosis: "Mild upper respiratory tract infection. No signs of bacterial infection or pneumonia. Symptoms are consistent with a common viral illness.",
-                prescription: [
-                    "Paracetamol 500mg — Take 2 tablets every 6 hours for 5 days",
-                    "Vitamin C 1000mg — Take 1 tablet daily for 2 weeks",
-                    "Plenty of fluids and bed rest",
-                ],
-                doctorsAdvice: "Avoid strenuous activity for the next 5 days. If symptoms worsen or fever exceeds 39°C, return immediately or visit the nearest clinic.",
-                followUpDate: "Sep 22, 2023",
-            }
-        },
-        {
-            id: "4",
-            doctorName: "Dr. David Chen",
-            specialty: "Dermatologist",
-            date: "Aug 02, 2023",
-            time: "09:15 AM - 09:45 AM",
-            status: "Completed",
-            imageUrl: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=500&auto=format&fit=crop&q=60",
-            visitSummary: {
-                recordTitle: "Dermatology Consultation — Aug 02, 2023",
-                doctorName: "Dr. David Chen",
-                facilityName: "ClearSkin Dermatology",
-                visitDate: "Aug 02, 2023",
-                diagnosis: "Mild eczema (atopic dermatitis) on the forearms and neck. Condition is manageable with topical treatment. No systemic involvement detected.",
-                prescription: [
-                    "Hydrocortisone cream 1% — Apply thinly to affected areas twice daily for 2 weeks",
-                    "Cetirizine 10mg — Take 1 tablet at night for 10 days to reduce itching",
-                    "Fragrance-free moisturiser — Apply generously after bathing",
-                ],
-                doctorsAdvice: "Avoid harsh soaps and synthetic clothing on affected areas. Use lukewarm water when bathing. Stress and sweating can trigger flares.",
-                followUpDate: "Sep 02, 2023",
-            }
-        }
-    ];
+function to12h(time24: string): string {
+    const [h, m] = time24.split(':').map(Number);
+    const period = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return `${h12.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')} ${period}`;
+}
+
+function canJoinCall(date: string, startTime: string): boolean {
+    const appointmentStart = new Date(`${date}T${startTime}`);
+    const openAt = new Date(appointmentStart.getTime() - 10 * 60 * 1000);
+    return new Date() >= openAt;
+}
+
+function mapToDisplay(appt: Appointment): DisplayAppointment {
+    const nameParts = [appt.doctor?.firstName, appt.doctor?.lastName].filter(Boolean);
+    const rawName = nameParts.join(' ') || 'Doctor';
+    const doctorName = rawName.startsWith('Dr.') ? rawName : `Dr. ${rawName}`;
+    return {
+        id: appt.id,
+        doctorId: appt.doctor?.id ?? appt.doctorId,
+        doctorName,
+        specialty: appt.doctor?.specialty?.name ?? '',
+        date: formatDate(appt.date),
+        time: `${to12h(appt.startTime)} - ${to12h(appt.endTime)}`,
+        status: appt.status.charAt(0).toUpperCase() + appt.status.slice(1),
+        rawDate: appt.date,
+        rawStartTime: appt.startTime,
+    };
+}
 
 // ---- Dropdown Menu Component ----
 function AppointmentMenu({
@@ -101,8 +63,8 @@ function AppointmentMenu({
     onReschedule,
     onCancel,
 }: {
-    appointment: UpcomingAppointment;
-    onReschedule: (appt: UpcomingAppointment) => void;
+    appointment: DisplayAppointment;
+    onReschedule: (appt: DisplayAppointment) => void;
     onCancel: (id: string) => void;
 }) {
     const [open, setOpen] = useState(false);
@@ -155,11 +117,36 @@ function MyAppointments() {
     const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
     const [selectedSummary, setSelectedSummary] = useState<VisitSummary | null>(null);
     const [rescheduleAppointment, setRescheduleAppointment] = useState<AppointmentToReschedule | null>(null);
+    const [rebookDoctor, setRebookDoctor] = useState<{ id: string; name: string; specialty: string } | null>(null);
 
-    const appointmentsToShow = activeTab === "upcoming" ? UPCOMING_APPOINTMENTS : PAST_APPOINTMENTS;
+    const { data, isLoading } = useAppointments();
+    const { mutate: cancelAppointment } = useCancelAppointment();
 
-    const handleCancel = (_id: string) => {
-        // TODO: hook up to API — show confirmation dialog before cancelling
+    const today = new Date().toISOString().slice(0, 10);
+    const all = data?.appointments ?? [];
+
+    const upcomingAppointments = all
+        .filter(a => (a.status === 'pending' || a.status === 'confirmed') && a.date >= today)
+        .sort((a, b) => (a.date + a.startTime).localeCompare(b.date + b.startTime))
+        .map(mapToDisplay);
+
+    const pastAppointments = all
+        .filter(a => a.status === 'completed' || a.status === 'cancelled' || a.date < today)
+        .sort((a, b) => (b.date + b.startTime).localeCompare(a.date + a.startTime))
+        .map(mapToDisplay);
+
+    const appointmentsToShow = activeTab === "upcoming" ? upcomingAppointments : pastAppointments;
+
+    const handleCancel = (id: string) => cancelAppointment(id);
+
+    const handleReschedule = (appt: DisplayAppointment) => {
+        setRescheduleAppointment({
+            id: appt.id,
+            doctorName: appt.doctorName,
+            specialty: appt.specialty,
+            date: appt.date,
+            time: appt.time,
+        });
     };
 
     return (
@@ -195,25 +182,26 @@ function MyAppointments() {
 
             {/* Appointments List */}
             <div className="space-y-4">
-                {appointmentsToShow.length > 0 ? (
+                {isLoading ? (
+                    Array.from({ length: 3 }).map((_, i) => (
+                        <div key={i} className="bg-white rounded-xl border border-neutral-200 shadow-sm p-5 h-28 animate-pulse" />
+                    ))
+                ) : appointmentsToShow.length > 0 ? (
                     appointmentsToShow.map((appointment) => (
                         <div key={appointment.id} className="bg-white rounded-xl border border-neutral-200 shadow-sm p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 hover:shadow-md transition-shadow">
 
                             {/* Left Side: Doctor Info & Date */}
                             <div className="flex items-start sm:items-center space-x-4 flex-1">
                                 <div className="w-16 h-16 rounded-full bg-primary-50 border border-primary-100 flex items-center justify-center shrink-0 overflow-hidden">
-                                    {appointment.imageUrl ? (
-                                        <img src={appointment.imageUrl} alt={appointment.doctorName} className="w-full h-full object-cover" />
-                                    ) : (
-                                        <FaUserDoctor className="w-8 h-8 text-primary-400" />
-                                    )}
+                                    <FaUserDoctor className="w-8 h-8 text-primary-400" />
                                 </div>
                                 <div>
                                     <div className="flex items-center gap-2 mb-1">
                                         <h3 className="font-archivo font-bold text-lg text-neutral-900">{appointment.doctorName}</h3>
                                         <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold font-poppins uppercase tracking-wide ${appointment.status === 'Confirmed' ? 'bg-green-100 text-green-700' :
                                             appointment.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' :
-                                                'bg-neutral-100 text-neutral-600'
+                                                appointment.status === 'Completed' ? 'bg-blue-100 text-blue-700' :
+                                                    'bg-neutral-100 text-neutral-600'
                                             }`}>
                                             {appointment.status}
                                         </span>
@@ -232,28 +220,29 @@ function MyAppointments() {
                                     <>
                                         <button
                                             onClick={() => navigate(`/patient/call/${appointment.id}`)}
-                                            className="flex-1 md:flex-none flex items-center justify-center bg-primary-500 hover:bg-primary-600 text-white px-5 py-2.5 rounded-lg font-poppins font-semibold text-sm transition-colors">
+                                            disabled={!canJoinCall(appointment.rawDate, appointment.rawStartTime)}
+                                            title={canJoinCall(appointment.rawDate, appointment.rawStartTime) ? undefined : "Available 10 minutes before the appointment"}
+                                            className="flex-1 md:flex-none flex items-center justify-center bg-primary-500 hover:bg-primary-600 text-white px-5 py-2.5 rounded-lg font-poppins font-semibold text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-primary-500">
                                             <FiVideo className="mr-2" /> Join Call
                                         </button>
                                         <AppointmentMenu
-                                            appointment={appointment as UpcomingAppointment}
-                                            onReschedule={(appt) => setRescheduleAppointment(appt)}
+                                            appointment={appointment}
+                                            onReschedule={handleReschedule}
                                             onCancel={handleCancel}
                                         />
                                     </>
                                 ) : (
                                     <>
                                         <button
-                                            onClick={() => {
-                                                const appt = appointment as typeof PAST_APPOINTMENTS[0];
-                                                if (appt.visitSummary) setSelectedSummary(appt.visitSummary);
-                                            }}
-                                            disabled={!(appointment as typeof PAST_APPOINTMENTS[0]).visitSummary}
+                                            onClick={() => selectedSummary && setSelectedSummary(null)}
+                                            disabled
                                             className="flex-1 md:flex-none flex items-center justify-center bg-white border border-neutral-200 hover:bg-neutral-50 text-neutral-700 px-5 py-2.5 rounded-lg font-poppins font-semibold text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                         >
                                             <FiFileText className="mr-2 text-neutral-500" /> View Notes
                                         </button>
-                                        <button className="flex-1 md:flex-none flex items-center justify-center bg-primary-50 text-primary-700 hover:bg-primary-100 px-5 py-2.5 rounded-lg font-poppins font-semibold text-sm transition-colors">
+                                        <button
+                                            onClick={() => setRebookDoctor({ id: appointment.doctorId, name: appointment.doctorName, specialty: appointment.specialty })}
+                                            className="flex-1 md:flex-none flex items-center justify-center bg-primary-50 text-primary-700 hover:bg-primary-100 px-5 py-2.5 rounded-lg font-poppins font-semibold text-sm transition-colors">
                                             Re-book
                                         </button>
                                     </>
@@ -285,6 +274,13 @@ function MyAppointments() {
                 isOpen={!!rescheduleAppointment}
                 onClose={() => setRescheduleAppointment(null)}
                 appointment={rescheduleAppointment}
+            />
+
+            {/* Re-book Modal */}
+            <BookAppointmentModal
+                isOpen={!!rebookDoctor}
+                onClose={() => setRebookDoctor(null)}
+                doctor={rebookDoctor}
             />
         </div>
     );

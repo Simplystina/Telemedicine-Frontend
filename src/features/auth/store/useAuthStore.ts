@@ -1,21 +1,26 @@
 import { create } from "zustand";
-
-type UserRole = "patient" | "doctor" | "admin";
+import { persist } from "zustand/middleware";
+import type { AuthUser } from "@/types";
 
 interface AuthState {
-  user: null | {
-    id: string;
-    role: UserRole;
-    token: string;
-  };
+  user: null | AuthUser;
+  refreshToken: string | null;
   setUser: (user: AuthState["user"]) => void;
+  setRefreshToken: (token: string | null) => void;
   logout: () => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-
-  setUser: (user) => set({ user }),
-
-  logout: () => set({ user: null }),
-}));
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
+      user: null,
+      refreshToken: null,
+      setUser: (user) => set({ user }),
+      setRefreshToken: (refreshToken) => set({ refreshToken }),
+      logout: () => set({ user: null, refreshToken: null }),
+    }),
+    {
+      name: "auth-storage",
+    }
+  )
+);

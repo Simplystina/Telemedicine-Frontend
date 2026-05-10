@@ -1,4 +1,5 @@
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
+import { useAuth } from "@/features/auth/hooks/useAuth";
 import {
     FiHome,
     FiCalendar,
@@ -32,11 +33,7 @@ interface DoctorSidebarProps {
 }
 
 function DoctorSidebar({ className = "hidden lg:flex sticky top-0", onClose }: DoctorSidebarProps) {
-    const navigate = useNavigate();
-
-    const handleLogout = () => {
-        navigate("/auth/login");
-    };
+    const { logout } = useAuth();
 
     return (
         <aside className={`w-64 h-screen bg-white border-r border-neutral-200 flex-col shrink-0 ${className}`}>
@@ -97,7 +94,7 @@ function DoctorSidebar({ className = "hidden lg:flex sticky top-0", onClose }: D
                     Settings
                 </button>
                 <button
-                    onClick={handleLogout}
+                    onClick={() => logout()}
                     className="w-full flex items-center px-3 py-2.5 rounded-lg font-poppins text-xs md:text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
                 >
                     <FiLogOut className="w-5 h-5 mr-3 shrink-0" />

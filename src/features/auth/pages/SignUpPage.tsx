@@ -1,31 +1,38 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Link, useNavigate } from 'react-router-dom';
-import { FaUserDoctor } from "react-icons/fa6"
-import { FaUser } from "react-icons/fa"
+import { Link } from 'react-router-dom';
+import { FaUserDoctor } from "react-icons/fa6";
+import { FaUser } from "react-icons/fa";
 import { signUpSchema, type SignUpFormData } from '../validation/schemas';
 import FormInput from '../components/FormInput';
 import PasswordInput from '../components/PasswordInput';
-
+import SpecialtySelect from '../components/SpecialtyMultiSelect';
+import { useAuth } from '../hooks/useAuth';
 import AuthLayout from '../components/AuthLayout';
 
 function SignUpPage() {
-    const navigate = useNavigate();
+    const { registerPatient, registerDoctor, isRegisteringPatient, isRegisteringDoctor, registerPatientError, registerDoctorError } = useAuth();
+
+    const isRegistering = isRegisteringPatient || isRegisteringDoctor;
+    const registerError = (registerPatientError || registerDoctorError) as any;
+
     const {
         register,
         handleSubmit,
         watch,
         setValue,
-        formState: { errors, isSubmitting },
+        formState: { errors },
     } = useForm<SignUpFormData>({
         resolver: zodResolver(signUpSchema),
         defaultValues: {
-            fullName: '',
+            firstName: '',
+            lastName: '',
             email: '',
             role: 'patient',
-            specialization: '',
-            licenseNumber: '',
-            experience: '',
+            hospital: '',
+            licenseNo: '',
+            yearsOfPractice: '',
+            specialtyId: undefined,
             password: '',
             confirmPassword: '',
             agreeToTerms: false,
@@ -36,16 +43,25 @@ function SignUpPage() {
 
     const onSubmit = async (data: SignUpFormData) => {
         try {
-            await new Promise((resolve) => setTimeout(resolve, 800));
-            console.log('Sign up:', data);
-            // Redirect based on selected role
             if (data.role === 'doctor') {
-                navigate('/doctor');
+                await registerDoctor({
+                    email: data.email,
+                    password: data.password,
+                    firstName: data.firstName,
+                    lastName: data.lastName,
+                    hospital: data.hospital,
+                    licenseNo: data.licenseNo,
+                    yearsOfPractice: data.yearsOfPractice,
+                    specialtyId: data.specialtyId,
+                });
             } else {
-                navigate('/patient');
+                await registerPatient({
+                    email: data.email,
+                    password: data.password,
+                });
             }
-        } catch (error) {
-            console.error('Sign up error:', error);
+        } catch {
+            // Error displayed via registerError banner
         }
     };
 
@@ -64,6 +80,13 @@ function SignUpPage() {
 
             {/* Sign Up Form */}
             <div className="bg-white rounded-2xl shadow-xl p-8">
+                {registerError && (
+                    <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+                        <p className="font-poppins text-sm text-red-600 font-medium">
+                            {registerError.response?.data?.message || registerError.message || 'Registration failed. Please try again.'}
+                        </p>
+                    </div>
+                )}
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
                     {/* Role Selection - Modern Radio Cards */}
                     <div className="space-y-3">
@@ -101,15 +124,24 @@ function SignUpPage() {
                         </div>
                     </div>
 
-                    {/* Basic Info */}
-                    <FormInput
-                        label="Full Name"
-                        id="fullName"
-                        type="text"
-                        placeholder="Enter your full name"
-                        error={errors.fullName?.message}
-                        {...register('fullName')}
-                    />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormInput
+                            label="First Name"
+                            id="firstName"
+                            type="text"
+                            placeholder="e.g. John"
+                            error={errors.firstName?.message}
+                            {...register('firstName')}
+                        />
+                        <FormInput
+                            label="Last Name"
+                            id="lastName"
+                            type="text"
+                            placeholder="e.g. Doe"
+                            error={errors.lastName?.message}
+                            {...register('lastName')}
+                        />
+                    </div>
 
                     <FormInput
                         label="Email Address"
@@ -126,30 +158,36 @@ function SignUpPage() {
                             <p className="font-poppins text-xs font-bold text-neutral-500 uppercase tracking-wider">Professional Information</p>
 
                             <FormInput
-                                label="Specialization"
-                                id="specialization"
+                                label="Hospital / Clinic"
+                                id="hospital"
                                 type="text"
-                                placeholder="e.g. Cardiologist, General Physician"
-                                error={errors.specialization?.message}
-                                {...register('specialization')}
+                                placeholder="e.g. Lagos General Hospital"
+                                error={errors.hospital?.message}
+                                {...register('hospital')}
+                            />
+
+                            <SpecialtySelect
+                                value={watch('specialtyId')}
+                                onChange={(id) => setValue('specialtyId', id, { shouldValidate: true })}
+                                error={errors.specialtyId?.message}
                             />
 
                             <div className="grid grid-cols-2 gap-4">
                                 <FormInput
                                     label="License Number"
-                                    id="licenseNumber"
+                                    id="licenseNo"
                                     type="text"
                                     placeholder="MDCN-12345"
-                                    error={errors.licenseNumber?.message}
-                                    {...register('licenseNumber')}
+                                    error={errors.licenseNo?.message}
+                                    {...register('licenseNo')}
                                 />
                                 <FormInput
                                     label="Experience (Years)"
-                                    id="experience"
+                                    id="yearsOfPractice"
                                     type="number"
                                     placeholder="e.g. 5"
-                                    error={errors.experience?.message}
-                                    {...register('experience')}
+                                    error={errors.yearsOfPractice?.message}
+                                    {...register('yearsOfPractice')}
                                 />
                             </div>
                         </div>
@@ -201,10 +239,10 @@ function SignUpPage() {
                     {/* Submit Button */}
                     <button
                         type="submit"
-                        disabled={isSubmitting}
+                        disabled={isRegistering}
                         className="w-full font-poppins bg-primary-500 hover:bg-primary-600 disabled:bg-primary-300 disabled:cursor-not-allowed text-white text-base font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg active:scale-95 disabled:active:scale-100"
                     >
-                        {isSubmitting ? (
+                        {isRegistering ? (
                             <span className="flex items-center justify-center font-poppins">
                                 <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

@@ -30,7 +30,7 @@ function DoctorTopNavigation({ onMenuClick }: { onMenuClick: () => void }) {
                     {/* Doctor Avatar */}
                     <div className="flex items-center space-x-3 border-l border-neutral-200 pl-4 ml-2">
                         <div className="hidden md:block text-right">
-                            <p className="text-sm font-poppins font-semibold text-neutral-900">Dr. Marcus Obi</p>
+                            <p className="text-sm font-poppins font-semibold text-neutral-900">{}Dr. Marcus Obi</p>
                             <p className="text-xs font-poppins text-primary-500">Doctor</p>
                         </div>
                         <div className="w-9 h-9 rounded-full bg-primary-500 flex items-center justify-center text-white font-bold font-poppins">

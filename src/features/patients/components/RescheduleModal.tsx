@@ -5,6 +5,7 @@ import { z } from "zod";
 import { FiX, FiClock, FiCalendar, FiCheckCircle, FiAlertCircle } from "react-icons/fi";
 import { FaUserDoctor } from "react-icons/fa6";
 import FormDatePicker from "@/features/auth/components/FormDatePicker";
+import { useUpdateAppointment } from "@/features/appointments/hooks/useAppointments";
 
 // ---- Types ----
 export interface AppointmentToReschedule {
@@ -33,8 +34,22 @@ type RescheduleFormData = z.infer<typeof rescheduleSchema>;
 
 const AVAILABLE_TIMES = ["09:00 AM", "09:30 AM", "10:00 AM", "11:00 AM", "01:00 PM", "02:30 PM", "04:00 PM"];
 
+function to24h(time12: string): string {
+    const [timePart, period] = time12.split(' ');
+    let [hours, minutes] = timePart.split(':').map(Number);
+    if (period === 'PM' && hours !== 12) hours += 12;
+    if (period === 'AM' && hours === 12) hours = 0;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+}
+
+function addMinutes(time24: string, mins: number): string {
+    const [h, m] = time24.split(':').map(Number);
+    const total = h * 60 + m + mins;
+    return `${Math.floor(total / 60).toString().padStart(2, '0')}:${(total % 60).toString().padStart(2, '0')}`;
+}
+
 function RescheduleModal({ isOpen, onClose, appointment }: RescheduleModalProps) {
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const { mutateAsync: updateAppointment, isPending: isSubmitting } = useUpdateAppointment();
     const [isSuccess, setIsSuccess] = useState(false);
 
     const {
@@ -58,14 +73,21 @@ function RescheduleModal({ isOpen, onClose, appointment }: RescheduleModalProps)
         onClose();
     };
 
-    const onSubmit = (_data: RescheduleFormData) => {
-        setIsSubmitting(true);
-        // Simulate API call — replace with real endpoint
-        setTimeout(() => {
-            setIsSubmitting(false);
+    const onSubmit = async (data: RescheduleFormData) => {
+        const startTime = to24h(data.newTime);
+        const endTime = addMinutes(startTime, 30);
+        try {
+            await updateAppointment({
+                id: appointment.id,
+                date: data.newDate.toISOString().slice(0, 10),
+                startTime,
+                endTime,
+            });
             setIsSuccess(true);
             setTimeout(() => handleClose(), 2500);
-        }, 1500);
+        } catch {
+            // errors shown via toast
+        }
     };
 
     return (

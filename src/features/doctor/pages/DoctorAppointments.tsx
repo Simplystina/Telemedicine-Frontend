@@ -1,29 +1,69 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { FiCalendar, FiVideo, FiClock, FiSearch, FiFilter, FiPlus } from "react-icons/fi";
+import { FiCalendar, FiVideo, FiClock, FiSearch, FiFilter, FiPlus, FiX, FiRefreshCw, FiCheck, FiAlertTriangle } from "react-icons/fi";
 import ScheduleAppointmentModal from "../components/ScheduleAppointmentModal";
+import { useAppointments, useConfirmAppointment, useCancelAppointment, useUpdateAppointment } from "@/features/appointments/hooks/useAppointments";
+import type { Appointment } from "@/types";
 
 type AppointmentStatus = "confirmed" | "pending" | "completed" | "cancelled";
 
-interface Appointment {
+interface DisplayAppointment {
     id: string;
     patient: string;
+    initials: string;
     type: string;
     date: string;
+    rawDate: string;
+    rawStartTime: string;
+    rawEndTime: string;
     time: string;
     status: AppointmentStatus;
     notes?: string;
 }
 
-const MOCK_APPOINTMENTS: Appointment[] = [
-    { id: "a1", patient: "Jane Doe", type: "Follow-up", date: "Mar 31, 2026", time: "09:00 AM", status: "confirmed" },
-    { id: "a2", patient: "Emeka Eze", type: "New Consultation", date: "Mar 31, 2026", time: "10:30 AM", status: "confirmed" },
-    { id: "a3", patient: "Aisha Bello", type: "Routine Check", date: "Mar 31, 2026", time: "01:00 PM", status: "pending" },
-    { id: "a4", patient: "Chidi Okeke", type: "Follow-up", date: "Mar 31, 2026", time: "03:00 PM", status: "confirmed" },
-    { id: "a5", patient: "Ngozi Adeyemi", type: "New Consultation", date: "Mar 29, 2026", time: "11:00 AM", status: "completed", notes: "Prescribed antibiotics" },
-    { id: "a6", patient: "David Okonkwo", type: "Cardiology Review", date: "Mar 28, 2026", time: "02:00 PM", status: "completed" },
-    { id: "a7", patient: "Fatima Musa", type: "Follow-up", date: "Mar 27, 2026", time: "10:00 AM", status: "cancelled" },
-];
+function formatDate(dateStr: string): string {
+    return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', {
+        month: 'short', day: 'numeric', year: 'numeric',
+    });
+}
+
+function to12h(time24: string): string {
+    const [h, m] = time24.split(':').map(Number);
+    const period = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return `${h12.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')} ${period}`;
+}
+
+function addMinutes(time24: string, mins: number): string {
+    const [h, m] = time24.split(':').map(Number);
+    const total = h * 60 + m + mins;
+    return `${Math.floor(total / 60).toString().padStart(2, '0')}:${(total % 60).toString().padStart(2, '0')}`;
+}
+
+function canJoinCall(date: string, startTime: string): boolean {
+    const appointmentStart = new Date(`${date}T${startTime}`);
+    const openAt = new Date(appointmentStart.getTime() - 10 * 60 * 1000);
+    return new Date() >= openAt;
+}
+
+function mapToDisplay(appt: Appointment): DisplayAppointment {
+    const nameParts = [appt.patient?.firstName, appt.patient?.lastName].filter(Boolean);
+    const patient = nameParts.join(' ') || 'Unknown Patient';
+    const initials = nameParts.map(n => n![0]).join('') || '?';
+    return {
+        id: appt.id,
+        patient,
+        initials,
+        type: appt.type,
+        date: formatDate(appt.date),
+        rawDate: appt.date,
+        rawStartTime: appt.startTime,
+        rawEndTime: appt.endTime,
+        time: `${to12h(appt.startTime)} – ${to12h(appt.endTime)}`,
+        status: appt.status as AppointmentStatus,
+        notes: appt.reason,
+    };
+}
 
 const statusStyles: Record<AppointmentStatus, string> = {
     confirmed: "bg-green-50 text-green-700",
@@ -40,16 +80,187 @@ const tabs: { label: string; value: string }[] = [
     { label: "Cancelled", value: "cancelled" },
 ];
 
+// ── Accept Modal ──────────────────────────────────────────────────────────────
+function AcceptModal({ appt, onClose, onConfirm, isPending }: {
+    appt: DisplayAppointment;
+    onClose: () => void;
+    onConfirm: () => void;
+    isPending: boolean;
+}) {
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/50 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 animate-fade-in-up">
+                <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+                        <FiCheck className="w-5 h-5 text-green-600" />
+                    </div>
+                    <h2 className="text-lg font-archivo font-bold text-neutral-900">Accept Appointment</h2>
+                </div>
+                <p className="font-poppins text-sm text-neutral-600 mb-1">
+                    Accept the appointment with <span className="font-semibold text-neutral-900">{appt.patient}</span>?
+                </p>
+                <p className="font-poppins text-sm text-neutral-500 mb-6">
+                    {appt.date} · {appt.time}
+                </p>
+                <div className="flex gap-3">
+                    <button
+                        onClick={onClose}
+                        className="flex-1 py-2.5 rounded-xl border border-neutral-200 font-poppins font-semibold text-sm text-neutral-600 hover:bg-neutral-50 transition-colors"
+                    >
+                        Not Now
+                    </button>
+                    <button
+                        onClick={onConfirm}
+                        disabled={isPending}
+                        className="flex-1 py-2.5 rounded-xl bg-green-500 text-white font-poppins font-semibold text-sm hover:bg-green-600 transition-colors disabled:opacity-50"
+                    >
+                        {isPending ? 'Accepting…' : 'Accept'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ── Cancel Modal ──────────────────────────────────────────────────────────────
+function CancelModal({ appt, onClose, onConfirm, isPending }: {
+    appt: DisplayAppointment;
+    onClose: () => void;
+    onConfirm: () => void;
+    isPending: boolean;
+}) {
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/50 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 animate-fade-in-up">
+                <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                        <FiAlertTriangle className="w-5 h-5 text-red-500" />
+                    </div>
+                    <h2 className="text-lg font-archivo font-bold text-neutral-900">Cancel Appointment</h2>
+                </div>
+                <p className="font-poppins text-sm text-neutral-600 mb-1">
+                    Cancel the appointment with <span className="font-semibold text-neutral-900">{appt.patient}</span>?
+                </p>
+                <p className="font-poppins text-sm text-neutral-500 mb-6">
+                    {appt.date} · {appt.time}
+                </p>
+                <div className="flex gap-3">
+                    <button
+                        onClick={onClose}
+                        className="flex-1 py-2.5 rounded-xl border border-neutral-200 font-poppins font-semibold text-sm text-neutral-600 hover:bg-neutral-50 transition-colors"
+                    >
+                        Keep It
+                    </button>
+                    <button
+                        onClick={onConfirm}
+                        disabled={isPending}
+                        className="flex-1 py-2.5 rounded-xl bg-red-500 text-white font-poppins font-semibold text-sm hover:bg-red-600 transition-colors disabled:opacity-50"
+                    >
+                        {isPending ? 'Cancelling…' : 'Cancel Appointment'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ── Reschedule Modal ──────────────────────────────────────────────────────────
+function RescheduleModal({ appt, onClose, onConfirm, isPending }: {
+    appt: DisplayAppointment;
+    onClose: () => void;
+    onConfirm: (date: string, startTime: string, endTime: string) => void;
+    isPending: boolean;
+}) {
+    const [newDate, setNewDate] = useState(appt.rawDate);
+    const [newTime, setNewTime] = useState(appt.rawStartTime);
+
+    const handleSubmit = () => {
+        if (!newDate || !newTime) return;
+        onConfirm(newDate, newTime, addMinutes(newTime, 30));
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/50 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 animate-fade-in-up">
+                <div className="flex items-center justify-between mb-5">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center shrink-0">
+                            <FiRefreshCw className="w-5 h-5 text-primary-600" />
+                        </div>
+                        <h2 className="text-lg font-archivo font-bold text-neutral-900">Reschedule</h2>
+                    </div>
+                    <button onClick={onClose} className="p-2 text-neutral-400 hover:text-neutral-600 rounded-full hover:bg-neutral-100 transition-colors">
+                        <FiX className="w-4 h-4" />
+                    </button>
+                </div>
+                <p className="font-poppins text-sm text-neutral-500 mb-5">
+                    Rescheduling appointment with <span className="font-semibold text-neutral-800">{appt.patient}</span>
+                </p>
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-xs font-poppins font-semibold text-neutral-500 uppercase tracking-wide mb-1.5">New Date</label>
+                        <input
+                            type="date"
+                            value={newDate}
+                            min={new Date().toISOString().slice(0, 10)}
+                            onChange={(e) => setNewDate(e.target.value)}
+                            className="w-full px-3.5 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-poppins font-semibold text-neutral-500 uppercase tracking-wide mb-1.5">New Start Time</label>
+                        <input
+                            type="time"
+                            value={newTime}
+                            onChange={(e) => setNewTime(e.target.value)}
+                            className="w-full px-3.5 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
+                        />
+                        <p className="mt-1 text-xs font-poppins text-neutral-400">Session duration is 30 minutes</p>
+                    </div>
+                </div>
+                <div className="flex gap-3 mt-6">
+                    <button
+                        onClick={onClose}
+                        className="flex-1 py-2.5 rounded-xl border border-neutral-200 font-poppins font-semibold text-sm text-neutral-600 hover:bg-neutral-50 transition-colors"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleSubmit}
+                        disabled={isPending || !newDate || !newTime}
+                        className="flex-1 py-2.5 rounded-xl bg-primary-500 text-white font-poppins font-semibold text-sm hover:bg-primary-600 transition-colors disabled:opacity-50"
+                    >
+                        {isPending ? 'Saving…' : 'Save Changes'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ── Main Component ────────────────────────────────────────────────────────────
 function DoctorAppointments() {
     const [activeTab, setActiveTab] = useState("all");
     const [search, setSearch] = useState("");
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
 
-    const filtered = MOCK_APPOINTMENTS.filter((a) => {
+    const [acceptTarget, setAcceptTarget] = useState<DisplayAppointment | null>(null);
+    const [cancelTarget, setCancelTarget] = useState<DisplayAppointment | null>(null);
+    const [rescheduleTarget, setRescheduleTarget] = useState<DisplayAppointment | null>(null);
+
+    const { data, isLoading } = useAppointments();
+    const { mutate: confirmAppointment, isPending: isConfirming } = useConfirmAppointment();
+    const { mutate: cancelAppointment, isPending: isCancelling } = useCancelAppointment();
+    const { mutate: updateAppointment, isPending: isRescheduling } = useUpdateAppointment();
+
+    const today = new Date().toISOString().slice(0, 10);
+    const appointments = (data?.appointments ?? []).map(mapToDisplay);
+
+    const filtered = appointments.filter((a) => {
         const matchesTab =
             activeTab === "all" ||
-            (activeTab === "today" && a.date === "Mar 31, 2026") ||
-            (activeTab === "upcoming" && a.status === "confirmed") ||
+            (activeTab === "today" && a.rawDate === today) ||
+            (activeTab === "upcoming" && (a.status === "confirmed" || a.status === "pending") && a.rawDate >= today) ||
             a.status === activeTab;
         const matchesSearch = a.patient.toLowerCase().includes(search.toLowerCase()) || a.type.toLowerCase().includes(search.toLowerCase());
         return matchesTab && matchesSearch;
@@ -62,12 +273,10 @@ function DoctorAppointments() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-archivo font-bold text-neutral-900 mb-1">Appointments</h1>
-                    <p className="text-neutral-600 font-poppins text-sm">
-                        Manage your upcoming, past, and pending appointments.
-                    </p>
+                    <p className="text-neutral-600 font-poppins text-sm">Manage your upcoming, past, and pending appointments.</p>
                 </div>
                 <button
-                    onClick={() => setIsModalOpen(true)}
+                    onClick={() => setIsScheduleModalOpen(true)}
                     className="flex items-center justify-center space-x-2 bg-primary-500 text-white px-5 py-2.5 rounded-xl font-poppins font-bold text-sm hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/20 active:scale-95"
                 >
                     <FiPlus className="w-4 h-4" />
@@ -75,7 +284,7 @@ function DoctorAppointments() {
                 </button>
             </div>
 
-            {/* Search & Filter Bar */}
+            {/* Search & Filter */}
             <div className="flex flex-col sm:flex-row gap-3">
                 <div className="relative flex-1">
                     <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 w-4 h-4" />
@@ -109,9 +318,15 @@ function DoctorAppointments() {
                 ))}
             </div>
 
-            {/* Appointments Table */}
+            {/* Appointments List */}
             <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
-                {filtered.length === 0 ? (
+                {isLoading ? (
+                    <div className="divide-y divide-neutral-100">
+                        {Array.from({ length: 4 }).map((_, i) => (
+                            <div key={i} className="p-5 h-16 animate-pulse bg-neutral-50" />
+                        ))}
+                    </div>
+                ) : filtered.length === 0 ? (
                     <div className="p-12 text-center">
                         <FiCalendar className="w-12 h-12 text-neutral-300 mx-auto mb-3" />
                         <p className="font-poppins text-neutral-500">No appointments found.</p>
@@ -120,39 +335,83 @@ function DoctorAppointments() {
                     <div className="divide-y divide-neutral-100">
                         {filtered.map((appt) => (
                             <div key={appt.id} className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-neutral-50 transition-colors">
+                                {/* Left: Patient info */}
                                 <div className="flex items-center space-x-4">
                                     <div className="w-11 h-11 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold font-archivo text-sm shrink-0">
-                                        {appt.patient.split(" ").map(n => n[0]).join("")}
+                                        {appt.initials}
                                     </div>
                                     <div>
-                                        <Link to={`/doctor/patients/${appt.id}`} className="text-sm font-bold font-poppins text-neutral-900 hover:text-primary-600 transition-colors">
-                                            {appt.patient}
-                                        </Link>
-                                        <p className="text-xs font-poppins text-neutral-500">{appt.type}</p>
+                                        <p className="text-sm font-bold font-poppins text-neutral-900">{appt.patient}</p>
+                                        <p className="text-xs font-poppins text-neutral-500 capitalize">{appt.type}</p>
                                         {appt.notes && (
                                             <p className="text-xs font-poppins text-neutral-400 italic mt-0.5">{appt.notes}</p>
                                         )}
                                     </div>
                                 </div>
-                                <div className="flex items-center space-x-4 ml-15 sm:ml-0">
+
+                                {/* Right: Date, status, actions */}
+                                <div className="flex flex-wrap items-center gap-3 ml-15 sm:ml-0">
                                     <div className="text-left sm:text-right">
                                         <p className="text-sm font-semibold font-poppins text-neutral-900">{appt.date}</p>
                                         <p className="text-xs font-poppins text-neutral-500 flex items-center sm:justify-end mt-0.5">
-                                            <FiClock className="w-3 h-3 mr-1" />
-                                            {appt.time}
+                                            <FiClock className="w-3 h-3 mr-1" />{appt.time}
                                         </p>
                                     </div>
+
                                     <span className={`px-3 py-1 rounded-full text-[11px] font-bold font-poppins capitalize ${statusStyles[appt.status]}`}>
                                         {appt.status}
                                     </span>
-                                    {(appt.status === "confirmed" || appt.status === "pending") && (
-                                        <Link
-                                            to={`/doctor/call/${appt.id}`}
-                                            className="p-2 rounded-lg bg-primary-50 text-primary-600 hover:bg-primary-100 transition-colors"
-                                            title="Start Video Call"
-                                        >
-                                            <FiVideo className="w-4 h-4" />
-                                        </Link>
+
+                                    {/* Action buttons */}
+                                    {appt.status === "pending" && (
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => setAcceptTarget(appt)}
+                                                className="px-3 py-1.5 rounded-lg bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 font-poppins font-semibold text-xs transition-colors flex items-center gap-1.5"
+                                            >
+                                                <FiCheck className="w-3.5 h-3.5" /> Accept
+                                            </button>
+                                            <button
+                                                onClick={() => setRescheduleTarget(appt)}
+                                                className="px-3 py-1.5 rounded-lg bg-neutral-50 text-neutral-700 border border-neutral-200 hover:bg-neutral-100 font-poppins font-semibold text-xs transition-colors flex items-center gap-1.5"
+                                            >
+                                                <FiRefreshCw className="w-3.5 h-3.5" /> Reschedule
+                                            </button>
+                                            <button
+                                                onClick={() => setCancelTarget(appt)}
+                                                className="px-3 py-1.5 rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 font-poppins font-semibold text-xs transition-colors flex items-center gap-1.5"
+                                            >
+                                                <FiX className="w-3.5 h-3.5" /> Cancel
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {appt.status === "confirmed" && (
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => setRescheduleTarget(appt)}
+                                                className="px-3 py-1.5 rounded-lg bg-neutral-50 text-neutral-700 border border-neutral-200 hover:bg-neutral-100 font-poppins font-semibold text-xs transition-colors flex items-center gap-1.5"
+                                            >
+                                                <FiRefreshCw className="w-3.5 h-3.5" /> Reschedule
+                                            </button>
+                                            {appt.type === "video" && (
+                                                canJoinCall(appt.rawDate, appt.rawStartTime) ? (
+                                                    <Link
+                                                        to={`/doctor/call/${appt.id}`}
+                                                        className="px-3 py-1.5 rounded-lg bg-primary-50 text-primary-600 border border-primary-200 hover:bg-primary-100 font-poppins font-semibold text-xs transition-colors flex items-center gap-1.5"
+                                                    >
+                                                        <FiVideo className="w-3.5 h-3.5" /> Join Call
+                                                    </Link>
+                                                ) : (
+                                                    <span
+                                                        title="Available 10 minutes before the appointment"
+                                                        className="px-3 py-1.5 rounded-lg bg-primary-50 text-primary-400 border border-primary-100 font-poppins font-semibold text-xs flex items-center gap-1.5 opacity-50 cursor-not-allowed"
+                                                    >
+                                                        <FiVideo className="w-3.5 h-3.5" /> Join Call
+                                                    </span>
+                                                )
+                                            )}
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -161,14 +420,43 @@ function DoctorAppointments() {
                 )}
             </div>
 
-            {/* Manual Appointment Modal */}
+            {/* Modals */}
+            {acceptTarget && (
+                <AcceptModal
+                    appt={acceptTarget}
+                    onClose={() => setAcceptTarget(null)}
+                    isPending={isConfirming}
+                    onConfirm={() => confirmAppointment(acceptTarget.id, { onSuccess: () => setAcceptTarget(null) })}
+                />
+            )}
+            {cancelTarget && (
+                <CancelModal
+                    appt={cancelTarget}
+                    onClose={() => setCancelTarget(null)}
+                    isPending={isCancelling}
+                    onConfirm={() => cancelAppointment(cancelTarget.id, { onSuccess: () => setCancelTarget(null) })}
+                />
+            )}
+            {rescheduleTarget && (
+                <RescheduleModal
+                    appt={rescheduleTarget}
+                    onClose={() => setRescheduleTarget(null)}
+                    isPending={isRescheduling}
+                    onConfirm={(date, startTime, endTime) =>
+                        updateAppointment(
+                            { id: rescheduleTarget.id, date, startTime, endTime },
+                            { onSuccess: () => setRescheduleTarget(null) }
+                        )
+                    }
+                />
+            )}
+
             <ScheduleAppointmentModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
+                isOpen={isScheduleModalOpen}
+                onClose={() => setIsScheduleModalOpen(false)}
             />
         </div>
     );
 }
 
 export default DoctorAppointments;
-

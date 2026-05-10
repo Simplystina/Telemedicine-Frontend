@@ -1,31 +1,27 @@
 import {
-    FiActivity, FiUsers, FiShield, FiTrendingUp,
-    FiAlertTriangle, FiArrowUpRight, FiServer, FiGlobe,
-    FiCalendar, FiCheckCircle
+    FiActivity, FiUsers, FiShield,
+    FiAlertTriangle, FiServer, FiGlobe,
+    FiCalendar, FiCheckCircle, FiGrid
 } from "react-icons/fi";
-
-const statCards = [
-    { label: "Total Users", value: "12,482", icon: FiUsers, color: "blue", change: "+14% this month" },
-    { label: "Verified Doctors", value: "842", icon: FiShield, color: "primary", change: "+5% growth" },
-    { label: "Platform Uptime", value: "98.4%", icon: FiActivity, color: "green", change: "Optimal" },
-    { label: "Revenue (ARR)", value: "$2.4M", icon: FiTrendingUp, color: "secondary", change: "+22% increase" },
-];
+import { useAdminDashboard } from "@/features/admin/hooks/useAdmin";
 
 const colorMap: Record<string, { iconBg: string; text: string }> = {
     primary: { iconBg: "bg-primary-100", text: "text-primary-600" },
     blue: { iconBg: "bg-blue-100", text: "text-blue-600" },
     green: { iconBg: "bg-green-100", text: "text-green-600" },
-    secondary: { iconBg: "bg-pink-100", text: "text-pink-600" },
+    amber: { iconBg: "bg-amber-100", text: "text-amber-600" },
 };
 
-const actionQueue = [
-    { user: "Dr. Sarah Johnson", action: "Pending Verification", time: "2 mins ago", type: "doctor" },
-    { user: "Emergency Alert", action: "System Load > 90%", time: "5 mins ago", type: "alert" },
-    { user: "John Carter", action: "Account Reconciliation", time: "12 mins ago", type: "user" },
-    { user: "Dr. Michael Chen", action: "Credential Update", time: "45 mins ago", type: "doctor" },
-];
-
 function AdminDashboard() {
+    const { data: stats, isLoading } = useAdminDashboard();
+
+    const statCards = [
+        { label: "Total Users", value: stats?.users.total, icon: FiUsers, color: "blue" },
+        { label: "Verified Doctors", value: stats?.doctors.verified, icon: FiShield, color: "green" },
+        { label: "Pending Review", value: stats?.doctors.pending, icon: FiAlertTriangle, color: "amber" },
+        { label: "Specialties", value: stats?.specialties.total, icon: FiGrid, color: "primary" },
+    ];
+
     return (
         <div className="space-y-8 animate-fade-in-up">
 
@@ -49,8 +45,9 @@ function AdminDashboard() {
                             </div>
                             <div>
                                 <p className="text-xs font-poppins text-neutral-500">{stat.label}</p>
-                                <p className="text-xl font-archivo font-bold text-neutral-900">{stat.value}</p>
-                                <p className={`text-[11px] font-poppins font-medium mt-0.5 ${colors.text}`}>{stat.change}</p>
+                                <p className="text-xl font-archivo font-bold text-neutral-900">
+                                    {isLoading ? "—" : (stat.value ?? "—")}
+                                </p>
                             </div>
                         </div>
                     );
@@ -117,39 +114,35 @@ function AdminDashboard() {
                     </div>
                 </div>
 
-                {/* Action Queue */}
+                {/* Doctor Status Summary */}
                 <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-6">
                     <h2 className="text-lg font-archivo font-bold text-neutral-900 flex items-center mb-5">
-                        <FiAlertTriangle className="mr-2 text-amber-500" />
-                        Action Queue
+                        <FiShield className="mr-2 text-primary-500" />
+                        Doctor Status
                     </h2>
 
                     <div className="space-y-3">
-                        {actionQueue.map((item, i) => (
-                            <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-neutral-50 border border-neutral-100 hover:border-primary-100 transition-colors group cursor-pointer">
+                        {[
+                            { label: "Verified", value: stats?.doctors.verified, color: "bg-green-100 text-green-700", dot: "bg-green-500" },
+                            { label: "Pending Review", value: stats?.doctors.pending, color: "bg-amber-100 text-amber-700", dot: "bg-amber-400" },
+                            { label: "Suspended", value: stats?.doctors.suspended, color: "bg-red-100 text-red-700", dot: "bg-red-500" },
+                        ].map(item => (
+                            <div key={item.label} className="flex items-center justify-between p-3 rounded-xl bg-neutral-50 border border-neutral-100">
                                 <div className="flex items-center space-x-3">
-                                    <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold font-archivo text-sm shrink-0 ${
-                                        item.type === 'alert' ? 'bg-red-100 text-red-600' :
-                                        item.type === 'doctor' ? 'bg-blue-100 text-blue-600' : 'bg-neutral-200 text-neutral-500'
-                                    }`}>
-                                        {item.type === 'alert' ? '!' : item.user.split(' ').map(n => n[0]).join('')}
-                                    </div>
-                                    <div>
-                                        <p className="text-xs font-bold font-poppins text-neutral-900">{item.user}</p>
-                                        <p className="text-[10px] font-poppins text-neutral-500">{item.action}</p>
-                                    </div>
+                                    <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${item.dot}`} />
+                                    <p className="text-sm font-semibold font-poppins text-neutral-900">{item.label}</p>
                                 </div>
-                                <div className="text-right">
-                                    <p className="text-[10px] font-poppins text-neutral-400">{item.time}</p>
-                                    <FiArrowUpRight className="ml-auto w-3 h-3 text-neutral-300 group-hover:text-primary-500 transition-colors" />
-                                </div>
+                                <span className={`text-xs font-bold font-poppins px-2.5 py-1 rounded-full ${item.color}`}>
+                                    {isLoading ? "—" : (item.value ?? "—")}
+                                </span>
                             </div>
                         ))}
                     </div>
 
-                    <button className="w-full mt-4 py-2.5 border border-neutral-200 rounded-xl text-xs font-semibold font-poppins text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900 transition-colors">
-                        View Full Log
-                    </button>
+                    <div className="mt-4 pt-4 border-t border-neutral-100 flex items-center justify-between text-xs font-poppins text-neutral-500">
+                        <span>Total doctors</span>
+                        <span className="font-bold text-neutral-900">{isLoading ? "—" : (stats?.doctors.total ?? "—")}</span>
+                    </div>
                 </div>
             </div>
 
