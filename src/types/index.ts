@@ -170,11 +170,12 @@ export interface UpdatePatientProfileData {
 
 // ─── Appointments ─────────────────────────────────────────────────────────────
 
-export type AppointmentStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed';
+export type AppointmentStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no_show';
 export type ConsultationType = 'video' | 'in-person';
 
 export interface AppointmentDoctor {
     id: string;
+    userId?: string;
     firstName?: string;
     lastName?: string;
     specialty?: Specialty;
@@ -182,6 +183,7 @@ export interface AppointmentDoctor {
 
 export interface AppointmentPatient {
     id: string;
+    userId?: string;
     firstName?: string;
     lastName?: string;
 }
@@ -196,6 +198,7 @@ export interface Appointment {
     reason?: string;
     type: ConsultationType;
     status: AppointmentStatus;
+    noShowBy?: 'patient' | 'doctor' | null;
     createdAt: string;
     doctor?: AppointmentDoctor;
     patient?: AppointmentPatient;
@@ -248,24 +251,85 @@ export interface ConsultationSession {
 export interface ConsultationToken {
     token: string;
     roomName: string;
+    appId: string;
 }
 
 export interface ConsultationNotes {
     id: string;
     appointmentId: string;
     diagnosis?: string;
-    symptoms?: string;
-    notes?: string;
+    clinicalNote?: string;
+    treatmentPlan?: string;
     followUpDate?: string;
+    patientNotes?: string;
+    isSharedWithPatient?: boolean;
     createdAt: string;
     updatedAt: string;
 }
 
 export interface ConsultationNotesData {
     diagnosis?: string;
-    symptoms?: string;
-    notes?: string;
+    clinicalNote?: string;
+    treatmentPlan?: string;
     followUpDate?: string;
+    patientNotes?: string;
+    isSharedWithPatient?: boolean;
+}
+
+// ─── Labs ───────────────────────────────────────────────────────────────────
+
+export const LabResultStatus = {
+    REQUESTED: 'requested',
+    PENDING: 'pending',
+    COMPLETED: 'completed',
+    FAILED: 'failed',
+} as const;
+
+export type LabResultStatus = (typeof LabResultStatus)[keyof typeof LabResultStatus];
+
+export interface LabResult {
+    id: number;
+    doctorId: number;
+    patientId: number;
+    appointmentId?: number;
+    testName: string;
+    status: LabResultStatus;
+    filePath?: string;
+    requestedAt: string;
+    resultDate?: string;
+    recommendedHospital?: string;
+    instructions?: string;
+    dateDue?: string;
+    notes?: string;
+    doctor?: Doctor;
+    patient?: PatientProfile;
+}
+
+export interface CreateLabResultData {
+    testName: string;
+    patientId: number;
+    appointmentId?: number;
+    recommendedHospital?: string;
+    instructions?: string;
+    dateDue?: string;
+}
+
+export interface UpdateLabResultData {
+    status?: LabResultStatus;
+    filePath?: string;
+    resultDate?: string;
+    notes?: string;
+}
+
+export interface BulkLabResultData {
+    patientId: number;
+    appointmentId: number;
+    tests: Array<{
+        testName: string;
+        recommendedHospital?: string;
+        instructions?: string;
+        dateDue?: string;
+    }>;
 }
 
 // ─── Admin ────────────────────────────────────────────────────────────────────
@@ -340,4 +404,29 @@ export interface Prescription {
 export interface IssuePrescriptionData {
     medications: PrescriptionMedication[];
     notes?: string;
+}
+
+// ─── Messaging ────────────────────────────────────────────────────────────────
+
+export type MessageType = 'text' | 'image' | 'file';
+
+export interface Message {
+    id: string;
+    senderId: string;
+    receiverId: string;
+    content: string;
+    type: MessageType;
+    appointmentId?: string | null;
+    createdAt: string;
+    isRead: boolean;
+}
+
+export interface MessageContact {
+    userId: string;
+    name: string;
+    role: string;
+    specialty?: string;
+    lastMessage?: string;
+    lastMessageAt?: string;
+    unreadCount: number;
 }

@@ -79,7 +79,7 @@ function RescheduleModal({ isOpen, onClose, appointment }: RescheduleModalProps)
         try {
             await updateAppointment({
                 id: appointment.id,
-                date: data.newDate.toISOString().slice(0, 10),
+                date: (() => { const d = data.newDate; return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })(),
                 startTime,
                 endTime,
             });

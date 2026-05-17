@@ -56,6 +56,7 @@ function addMinutes(time24: string, mins: number): string {
 }
 
 function getSlotsForDay(slots: AvailabilitySlot[], dayOfWeek: number): string[] {
+    const seen = new Set<string>();
     return slots
         .filter(s => s.dayOfWeek === dayOfWeek)
         .flatMap(s => {
@@ -66,6 +67,11 @@ function getSlotsForDay(slots: AvailabilitySlot[], dayOfWeek: number): string[] 
                 cur = addMinutes(cur, 30);
             }
             return times;
+        })
+        .filter(t => {
+            if (seen.has(t)) return false;
+            seen.add(t);
+            return true;
         });
 }
 
@@ -113,7 +119,7 @@ function BookAppointmentModal({ isOpen, onClose, doctor }: BookAppointmentModalP
         try {
             await bookAppointment({
                 doctorId: doctor.id,
-                date: data.date.toISOString().slice(0, 10),
+                date: (() => { const d = data.date; return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })(),
                 startTime,
                 endTime,
                 reason: data.reason,
@@ -219,10 +225,10 @@ function BookAppointmentModal({ isOpen, onClose, doctor }: BookAppointmentModalP
                                     </label>
                                     {currentTimeSlots.length > 0 ? (
                                         <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                                            {currentTimeSlots.map((time) => (
+                                            {currentTimeSlots.map((time, i) => (
                                                 <button
                                                     type="button"
-                                                    key={time}
+                                                    key={`${time}-${i}`}
                                                     onClick={() => setValue("time", time, { shouldValidate: true })}
                                                     className={`py-2 px-1 rounded-lg border font-medium text-xs sm:text-sm flex items-center justify-center transition-colors ${selectedTime === time
                                                         ? "bg-primary-50 text-primary-700 border-primary-500"

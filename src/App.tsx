@@ -1,6 +1,9 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "react-hot-toast";
+import { SocketProvider } from "@/features/messages/context/SocketContext";
+import { useAuthStore } from "@/features/auth/store/useAuthStore";
+import { useCallStore } from "@/features/consultations/store/useCallStore";
 
 import LandingPage from "@/features/landing/pages/LandingPage";
 import Login from "@/features/auth/pages/LoginPage";
@@ -12,10 +15,12 @@ import ResendVerification from "@/features/auth/pages/ResendVerificationPage";
 
 // Patient Dashboard Imports
 import DashboardLayout from "@/features/patients/components/DashboardLayout";
+import { CallInitializer } from "@/features/consultations/components/CallInitializer";
 import DashboardOverview from "@/features/patients/pages/DashboardOverview";
 import BrowseDoctors from "@/features/patients/pages/BrowseDoctors";
 import MyAppointments from "@/features/patients/pages/MyAppointments";
 import HealthRecords from "@/features/patients/pages/HealthRecords";
+import PatientLabs from "@/features/patients/pages/PatientLabs";
 import Messages from "@/features/patients/pages/Messages";
 import Subscription from "@/features/patients/pages/Subscription";
 import VideoCallRoom from "@/features/patients/pages/VideoCallRoom";
@@ -34,6 +39,7 @@ import DoctorProfile from "@/features/doctor/pages/DoctorProfile";
 import DoctorNotifications from "@/features/doctor/pages/DoctorNotifications";
 import DoctorVideoCallRoom from "@/features/doctor/pages/DoctorVideoCallRoom";
 import DoctorPendingNotes from "@/features/doctor/pages/DoctorPendingNotes";
+import DoctorLabs from "@/features/doctor/pages/DoctorLabs";
 import AdminLoginPage from "@/features/admin/pages/AdminLoginPage";
 import ProtectedRoute from "@/features/auth/components/ProtectedRoute";
 import AdminLayout from "@/features/admin/components/AdminLayout";
@@ -51,15 +57,29 @@ const queryClient = new QueryClient({
         return failureCount < 2;
       },
       refetchOnWindowFocus: false,
+      staleTime: 1000 * 60 * 5, // 5 minutes - keeps data fresh but reduces frequent refreshes
+      gcTime: 1000 * 60 * 30, // 30 minutes
     },
   },
 });
 
 function App() {
+  const { isActive, activeCallId } = useCallStore();
+  const { user } = useAuthStore();
+  const isDoctor = user?.role === 'doctor';
+  const isPatient = user?.role === 'patient';
+
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
+        <SocketProvider>
         <Toaster position="top-right" />
+        
+        {/* Global Video Call Overlay */}
+        {isActive && activeCallId && (
+          isDoctor ? <DoctorVideoCallRoom /> : isPatient ? <VideoCallRoom /> : null
+        )}
+        
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="auth/login" element={<Login />} />
@@ -78,11 +98,12 @@ function App() {
               <Route path="browse-doctors" element={<BrowseDoctors />} />
               <Route path="appointments" element={<MyAppointments />} />
               <Route path="records" element={<HealthRecords />} />
+              <Route path="labs" element={<PatientLabs />} />
               <Route path="messages" element={<Messages />} />
               <Route path="subscription" element={<Subscription />} />
               <Route path="settings" element={<PatientProfile />} />
             </Route>
-            <Route path="/patient/call/:appointmentId" element={<VideoCallRoom />} />
+            <Route path="/patient/call/:appointmentId" element={<CallInitializer />} />
           </Route>
 
           {/* Doctor Routes */}
@@ -98,8 +119,9 @@ function App() {
               <Route path="profile" element={<DoctorProfile />} />
               <Route path="notifications" element={<DoctorNotifications />} />
               <Route path="records" element={<DoctorPendingNotes />} />
+              <Route path="labs" element={<DoctorLabs />} />
             </Route>
-            <Route path="/doctor/call/:appointmentId" element={<DoctorVideoCallRoom />} />
+            <Route path="/doctor/call/:appointmentId" element={<CallInitializer />} />
           </Route>
 
           {/* Admin Routes */}
@@ -115,6 +137,7 @@ function App() {
             </Route>
           </Route>
         </Routes>
+        </SocketProvider>
       </BrowserRouter>
     </QueryClientProvider>
   );

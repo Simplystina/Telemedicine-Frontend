@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { FiX, FiFileText, FiActivity, FiTag, FiCheck, FiPlus, FiTrash2, FiEye } from 'react-icons/fi';
 import { useCreateNotes, useUpdateNotes } from '@/features/consultations/hooks/useConsultations';
-import { useIssuePrescription } from '@/features/prescriptions/hooks/usePrescriptions';
+import { useIssuePrescription, useUpdatePrescription } from '@/features/prescriptions/hooks/usePrescriptions';
+import { useBulkRequestLabTests } from '@/features/labs/hooks/useLabs';
+import FormDatePicker from '@/features/auth/components/FormDatePicker';
 import type { ConsultationNotes } from '@/types';
 
 interface PrescriptionRow {
@@ -12,18 +14,30 @@ interface PrescriptionRow {
     duration: string;
 }
 
+interface LabOrderRow {
+    testName: string;
+    recommendedHospital: string;
+    instructions: string;
+    dateDue: string;
+}
+
 interface ConsultationNoteModalProps {
     isOpen: boolean;
     onClose: () => void;
     patientName: string;
     appointmentId: string;
+    patientId: string;
     existingNotes?: ConsultationNotes;
+    existingPrescription?: any;
+    existingLabOrders?: any[];
 }
 
-function ConsultationNoteModal({ isOpen, onClose, patientName, appointmentId, existingNotes }: ConsultationNoteModalProps) {
+function ConsultationNoteModal({ isOpen, onClose, patientName, appointmentId, patientId, existingNotes, existingPrescription, existingLabOrders }: ConsultationNoteModalProps) {
     const { mutateAsync: createNotes } = useCreateNotes();
     const { mutateAsync: updateNotes } = useUpdateNotes();
     const { mutateAsync: issuePrescription } = useIssuePrescription();
+    const { mutateAsync: updatePrescription } = useUpdatePrescription();
+    const { mutateAsync: bulkRequestLabTests } = useBulkRequestLabTests();
 
     const isEditMode = !!existingNotes;
 
@@ -31,35 +45,78 @@ function ConsultationNoteModal({ isOpen, onClose, patientName, appointmentId, ex
     const [clinicalNotes, setClinicalNotes] = useState('');
     const [patientNote, setPatientNote] = useState('');
     const [prescriptions, setPrescriptions] = useState<PrescriptionRow[]>([{ med: '', dose: '', unit: '', frequency: '', duration: '' }]);
+    const [labOrders, setLabOrders] = useState<LabOrderRow[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
 
     useEffect(() => {
         if (existingNotes) {
             setDiagnosis(existingNotes.diagnosis ?? '');
-            setClinicalNotes(existingNotes.notes ?? '');
-            setPatientNote(existingNotes.symptoms ?? '');
+            setClinicalNotes(existingNotes.clinicalNote ?? '');
+            setPatientNote(existingNotes.patientNotes ?? '');
+
+            if (existingPrescription?.medications?.length > 0) {
+                setPrescriptions(existingPrescription.medications.map((m: any) => ({
+                    med: m.name,
+                    dose: m.dosage,
+                    unit: m.unit,
+                    frequency: m.frequency,
+                    duration: m.duration
+                })));
+            } else {
+                setPrescriptions([{ med: '', dose: '', unit: '', frequency: '', duration: '' }]);
+            }
         } else {
             setDiagnosis('');
             setClinicalNotes('');
             setPatientNote('');
             setPrescriptions([{ med: '', dose: '', unit: '', frequency: '', duration: '' }]);
         }
-    }, [existingNotes, isOpen]);
+        // Always reset new lab orders when modal opens/changes
+        setLabOrders([]);
+    }, [existingNotes, existingPrescription, isOpen, appointmentId, patientId]);
 
     if (!isOpen) return null;
 
     const addPrescription = () => setPrescriptions([...prescriptions, { med: '', dose: '', unit: '', frequency: '', duration: '' }]);
     const removePrescription = (index: number) => setPrescriptions(prescriptions.filter((_, i) => i !== index));
 
+    const addLabOrder = () => setLabOrders([...labOrders, { testName: '', recommendedHospital: '', instructions: '', dateDue: '' }]);
+    const updateLabOrder = (index: number, field: keyof LabOrderRow, value: string | Date | null) => {
+        const updated = [...labOrders];
+        const finalValue = value instanceof Date ? value.toISOString() : value === null ? '' : value;
+        updated[index] = { ...updated[index], [field]: finalValue };
+        setLabOrders(updated);
+    };
+    const removeLabOrder = (index: number) => setLabOrders(labOrders.filter((_, i) => i !== index));
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
         try {
             if (isEditMode) {
-                await updateNotes({ appointmentId, diagnosis, notes: clinicalNotes, symptoms: patientNote || undefined });
+                await updateNotes({ appointmentId, diagnosis, clinicalNote: clinicalNotes, patientNotes: patientNote || undefined });
+
+                const validMeds = prescriptions.filter(p => p.med.trim() && p.dose.trim());
+                if (validMeds.length > 0) {
+                    const payload = {
+                        appointmentId,
+                        medications: validMeds.map(p => ({
+                            name: p.med,
+                            dosage: p.dose,
+                            unit: p.unit || 'mg',
+                            frequency: p.frequency || 'As directed',
+                            duration: p.duration || 'As needed',
+                        })),
+                    };
+                    if (existingPrescription) {
+                        await updatePrescription(payload);
+                    } else {
+                        await issuePrescription(payload);
+                    }
+                }
             } else {
-                await createNotes({ appointmentId, diagnosis, notes: clinicalNotes, symptoms: patientNote || undefined });
+                await createNotes({ appointmentId, diagnosis, clinicalNote: clinicalNotes, patientNotes: patientNote || undefined });
 
                 const validMeds = prescriptions.filter(p => p.med.trim() && p.dose.trim());
                 if (validMeds.length > 0) {
@@ -74,6 +131,18 @@ function ConsultationNoteModal({ isOpen, onClose, patientName, appointmentId, ex
                         })),
                     });
                 }
+            }
+
+            // Handle New Lab Orders (for both Create and Edit modes)
+            const validLabs = labOrders.filter(l => l.testName.trim());
+            const isIdValid = (id: any) => id && String(id) !== 'null' && String(id) !== 'undefined' && !isNaN(Number(id)) && Number(id) > 0;
+
+            if (validLabs.length > 0 && isIdValid(patientId) && isIdValid(appointmentId)) {
+                await bulkRequestLabTests({
+                    patientId: Number(patientId),
+                    appointmentId: Number(appointmentId),
+                    tests: validLabs
+                });
             }
 
             setIsSuccess(true);
@@ -157,8 +226,8 @@ function ConsultationNoteModal({ isOpen, onClose, patientName, appointmentId, ex
                             />
                         </div>
 
-                        {/* Prescriptions — create mode only */}
-                        {!isEditMode && <div className="space-y-4">
+                        {/* Prescriptions */}
+                        <div className="space-y-4">
                             <div className="flex items-center justify-between">
                                 <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider font-poppins flex items-center">
                                     <FiActivity className="mr-2 text-primary-500" /> Prescriptions
@@ -240,7 +309,103 @@ function ConsultationNoteModal({ isOpen, onClose, patientName, appointmentId, ex
                                     </div>
                                 ))}
                             </div>
-                        </div>}
+                        </div>
+
+                        {/* Lab Orders */}
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider font-poppins flex items-center">
+                                    <FiActivity className="mr-2 text-primary-500" /> Lab Test Requests
+                                </label>
+                                <button
+                                    type="button"
+                                    onClick={addLabOrder}
+                                    disabled={isSubmitting}
+                                    className="text-xs font-bold font-poppins text-primary-600 hover:text-primary-700 flex items-center space-x-1 px-3 py-1 bg-primary-50 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
+                                    <FiPlus /> <span>Add Test</span>
+                                </button>
+                            </div>
+
+                            {/* Existing Lab Results (Read-only) */}
+                            {existingLabOrders && existingLabOrders.length > 0 && (
+                                <div className="space-y-2 mb-4">
+                                    <p className="text-[10px] font-bold text-neutral-400 uppercase font-poppins">Previously Ordered</p>
+                                    <div className="grid gap-2">
+                                        {existingLabOrders.map((lab, i) => (
+                                            <div key={i} className="p-3 bg-primary-50/30 border border-primary-100 rounded-xl flex items-center justify-between">
+                                                <div className="flex items-center space-x-3">
+                                                    <div className="w-8 h-8 rounded-lg bg-white border border-primary-100 flex items-center justify-center text-primary-500">
+                                                        <FiActivity className="w-4 h-4" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs font-bold text-neutral-800 font-poppins">{lab.testName}</p>
+                                                        <p className="text-[9px] text-neutral-500 font-poppins">Status: <span className="capitalize font-semibold text-primary-600">{lab.status}</span></p>
+                                                    </div>
+                                                </div>
+                                                {lab.status === 'completed' && lab.filePath && (
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => window.open(lab.filePath, '_blank')}
+                                                        className="p-1.5 text-primary-600 hover:bg-primary-100 rounded-lg transition-colors"
+                                                    >
+                                                        <FiEye className="w-3.5 h-3.5" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="space-y-3">
+                                {labOrders.map((test, index) => (
+                                    <div key={index} className="space-y-3 p-4 bg-neutral-50/50 border border-neutral-100 rounded-2xl animate-scale-in relative group">
+                                        <button
+                                            type="button"
+                                            onClick={() => removeLabOrder(index)}
+                                            disabled={isSubmitting}
+                                            className="absolute -top-2 -right-2 w-8 h-8 bg-white text-neutral-400 hover:text-red-500 hover:bg-red-50 border border-neutral-100 rounded-full shadow-sm flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 disabled:opacity-40"
+                                        >
+                                            <FiTrash2 className="w-4 h-4" />
+                                        </button>
+
+                                        <input
+                                            placeholder="Test Name (e.g. Full Blood Count)"
+                                            value={test.testName}
+                                            onChange={(e) => updateLabOrder(index, 'testName', e.target.value)}
+                                            className="w-full px-4 py-3 bg-white border border-neutral-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none font-poppins text-sm transition-all"
+                                        />
+                                        
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            <input
+                                                placeholder="Recommended Hospital"
+                                                value={test.recommendedHospital}
+                                                onChange={(e) => updateLabOrder(index, 'recommendedHospital', e.target.value)}
+                                                className="px-4 py-3 bg-white border border-neutral-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none font-poppins text-sm transition-all"
+                                            />
+                                            <div className="relative">
+                                                <FormDatePicker
+                                                    selected={test.dateDue ? new Date(test.dateDue) : null}
+                                                    onChange={(date) => updateLabOrder(index, 'dateDue', date)}
+                                                    placeholderText="Date Due"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <textarea
+                                            placeholder="Instructions (e.g. Fasting required for 12 hours)"
+                                            value={test.instructions}
+                                            onChange={(e) => updateLabOrder(index, 'instructions', e.target.value)}
+                                            className="w-full px-4 py-3 bg-white border border-neutral-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none font-poppins text-sm h-20 resize-none transition-all shadow-sm"
+                                        />
+                                    </div>
+                                ))}
+                                {labOrders.length === 0 && (!existingLabOrders || existingLabOrders.length === 0) && (
+                                    <p className="text-[10px] text-neutral-400 font-poppins italic">No lab tests requested.</p>
+                                )}
+                            </div>
+                        </div>
 
                         {/* Actions */}
                         <div className="flex space-x-4 pt-4 border-t border-neutral-100">
@@ -278,3 +443,4 @@ function ConsultationNoteModal({ isOpen, onClose, patientName, appointmentId, ex
 }
 
 export default ConsultationNoteModal;
+

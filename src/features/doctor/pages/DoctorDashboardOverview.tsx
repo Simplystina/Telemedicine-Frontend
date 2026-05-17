@@ -1,10 +1,11 @@
 import { Link } from "react-router-dom";
 import {
-    FiCalendar, FiUsers, FiDollarSign, FiMessageSquare,
-    FiClock, FiVideo, FiTrendingUp, FiCheckCircle, FiAlertCircle
+    FiCalendar, FiUsers, FiMessageSquare,
+    FiClock, FiVideo, FiCheckCircle, FiAlertCircle, FiActivity
 } from "react-icons/fi";
 import { useAppointments } from "@/features/appointments/hooks/useAppointments";
 import { useAuthStore } from "@/features/auth/store/useAuthStore";
+import { useLabResults } from "@/features/labs/hooks/useLabs";
 
 function to12h(time24: string): string {
     const [h, m] = time24.split(':').map(Number);
@@ -18,11 +19,13 @@ const colorMap: Record<string, { bg: string; text: string; iconBg: string }> = {
     blue: { bg: "bg-blue-50", text: "text-blue-600", iconBg: "bg-blue-100" },
     green: { bg: "bg-green-50", text: "text-green-600", iconBg: "bg-green-100" },
     secondary: { bg: "bg-pink-50", text: "text-pink-600", iconBg: "bg-pink-100" },
+    amber: { bg: "bg-amber-50", text: "text-amber-600", iconBg: "bg-amber-100" },
 };
 
 function DoctorDashboardOverview() {
     const { user } = useAuthStore();
     const { data: apptData, isLoading } = useAppointments();
+    const { data: labResults = [], isLoading: labsLoading } = useLabResults();
 
     const today = new Date().toISOString().slice(0, 10);
     const todayAppointments = (apptData?.appointments ?? [])
@@ -34,7 +37,7 @@ function DoctorDashboardOverview() {
     const statCards = [
         { label: "Today's Appointments", value: isLoading ? '—' : String(todayAppointments.length), icon: FiCalendar, color: "primary", change: "scheduled for today" },
         { label: "Total Patients", value: "128", icon: FiUsers, color: "blue", change: "+5 this week" },
-        { label: "Monthly Earnings", value: "₦480,000", icon: FiDollarSign, color: "green", change: "+12% vs last month" },
+        { label: "Pending Lab Results", value: labsLoading ? '—' : String(labResults.filter(l => l.status !== 'completed').length), icon: FiActivity, color: "amber", change: "awaiting uploads" },
         { label: "Unread Messages", value: "7", icon: FiMessageSquare, color: "secondary", change: "3 urgent" },
     ];
 
@@ -149,9 +152,9 @@ function DoctorDashboardOverview() {
                                 <FiUsers className="w-6 h-6 text-blue-600 mb-2 group-hover:scale-110 transition-transform" />
                                 <span className="text-xs font-semibold font-poppins text-blue-800">Patients</span>
                             </Link>
-                            <Link to="/doctor/earnings" className="group flex flex-col items-center p-4 rounded-xl bg-green-50 hover:bg-green-100 transition-colors text-center">
-                                <FiTrendingUp className="w-6 h-6 text-green-600 mb-2 group-hover:scale-110 transition-transform" />
-                                <span className="text-xs font-semibold font-poppins text-green-800">Earnings</span>
+                            <Link to="/doctor/labs" className="group flex flex-col items-center p-4 rounded-xl bg-amber-50 hover:bg-amber-100 transition-colors text-center">
+                                <FiActivity className="w-6 h-6 text-amber-600 mb-2 group-hover:scale-110 transition-transform" />
+                                <span className="text-xs font-semibold font-poppins text-amber-800">Lab Results</span>
                             </Link>
                             <Link to="/doctor/messages" className="group flex flex-col items-center p-4 rounded-xl bg-pink-50 hover:bg-pink-100 transition-colors text-center">
                                 <FiMessageSquare className="w-6 h-6 text-pink-600 mb-2 group-hover:scale-110 transition-transform" />

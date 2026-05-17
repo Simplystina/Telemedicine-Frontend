@@ -1,10 +1,12 @@
-import { Link } from "react-router-dom";
-import { FiCalendar, FiVideo, FiFileText, FiMessageSquare, FiTrendingUp, FiClock, FiStar } from "react-icons/fi";
+import { Link, useNavigate } from "react-router-dom";
+import { FiCalendar, FiVideo, FiFileText, FiMessageSquare, FiTrendingUp, FiClock, FiStar, FiActivity, FiMapPin } from "react-icons/fi";
 import { FaUserDoctor } from "react-icons/fa6";
 import { usePatientProfile } from "@/features/patients/hooks/usePatient";
 import { useAppointments } from "@/features/appointments/hooks/useAppointments";
 import { useAuthStore } from "@/features/auth/store/useAuthStore";
 import { usePrescriptions } from "@/features/prescriptions/hooks/usePrescriptions";
+import { useLabResults } from "@/features/labs/hooks/useLabs";
+import { LabResultStatus } from "@/types";
 
 function formatDate(dateStr: string): string {
     return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', {
@@ -20,12 +22,20 @@ function to12h(time24: string): string {
 }
 
 function canJoinCall(date: string, startTime: string): boolean {
-    const appointmentStart = new Date(`${date}T${startTime}`);
-    const openAt = new Date(appointmentStart.getTime() - 10 * 60 * 1000);
-    return new Date() >= openAt;
+    try {
+        const normalizedDate = date.includes('T') ? date.split('T')[0] : date;
+        const normalizedTime = startTime.split(':').slice(0, 2).join(':');
+        const appointmentStart = new Date(`${normalizedDate}T${normalizedTime}:00`);
+        if (isNaN(appointmentStart.getTime())) return false;
+        const openAt = new Date(appointmentStart.getTime() - 10 * 60 * 1000);
+        return new Date() >= openAt;
+    } catch (e) {
+        return false;
+    }
 }
 
 function DashboardOverview() {
+    const navigate = useNavigate();
     // ---- MOCK SUBSCRIPTION STATE ----
     const isSubscribed: boolean = true;
     const freeConsultationsRemaining: number = 1;
@@ -37,6 +47,9 @@ function DashboardOverview() {
 
     const { data: apptData } = useAppointments();
     const { data: prescriptions = [], isLoading: isLoadingRx } = usePrescriptions();
+    const { data: labResults = [], isLoading: isLoadingLabs } = useLabResults();
+
+    const pendingLabs = labResults.filter(l => l.status === LabResultStatus.REQUESTED || l.status === LabResultStatus.PENDING);
 
     // Flatten all medications from all prescriptions, most recent first
     const allMedications = prescriptions
@@ -44,9 +57,10 @@ function DashboardOverview() {
         .sort((a, b) => b.issuedAt.localeCompare(a.issuedAt))
         .flatMap(rx => rx.medications)
         .slice(0, 3);
-    const today = new Date().toISOString().slice(0, 10);
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     const nextAppointment = (apptData?.appointments ?? [])
-        .filter(a => (a.status === 'confirmed' || a.status === 'pending') && a.date >= today)
+        .filter(a => a.status === 'confirmed' || a.status === 'pending')
         .sort((a, b) => (a.date + a.startTime).localeCompare(b.date + b.startTime))[0];
 
     const nextDoctorName = nextAppointment
@@ -147,23 +161,15 @@ function DashboardOverview() {
                                         </div>
                                     </div>
                                     <div className="mt-6 flex gap-3">
-                                        {canJoinCall(nextAppointment.date, nextAppointment.startTime) ? (
-                                            <Link
-                                                to={`/patient/call/${nextAppointment.id}`}
-                                                className="flex-1 bg-primary-500 hover:bg-primary-600 text-white font-poppins font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center"
-                                            >
-                                                <FiVideo className="w-4 h-4 mr-2" />
-                                                Join Call
-                                            </Link>
-                                        ) : (
-                                            <div
-                                                title="Available 10 minutes before the appointment"
-                                                className="flex-1 bg-primary-500 text-white font-poppins font-semibold py-2.5 rounded-lg flex items-center justify-center opacity-40 cursor-not-allowed"
-                                            >
-                                                <FiVideo className="w-4 h-4 mr-2" />
-                                                Join Call
-                                            </div>
-                                        )}
+                                        <button
+                                            onClick={() => canJoinCall(nextAppointment.date, nextAppointment.startTime) && navigate(`/patient/call/${nextAppointment.id}`)}
+                                            disabled={!canJoinCall(nextAppointment.date, nextAppointment.startTime)}
+                                            title={canJoinCall(nextAppointment.date, nextAppointment.startTime) ? undefined : "Available 10 minutes before the appointment"}
+                                            className="flex-1 bg-primary-500 hover:bg-primary-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-poppins font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center"
+                                        >
+                                            <FiVideo className="w-4 h-4 mr-2" />
+                                            Join Call
+                                        </button>
                                         <Link
                                             to="/patient/appointments"
                                             className="flex-1 bg-white border border-neutral-200 hover:bg-neutral-50 text-neutral-700 font-poppins font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center"
@@ -221,6 +227,59 @@ function DashboardOverview() {
 
                 {/* Column 2: Side Widgets (Takes up 1/3 on desktop) */}
                 <div className="space-y-6">
+
+                    {/* Pending Lab Orders Widget */}
+                    <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-6">
+                        <div className="flex items-center justify-between mb-5">
+                            <h2 className="text-lg font-archivo font-bold text-neutral-900 flex items-center">
+                                <FiActivity className="mr-2 text-primary-500" /> Lab Orders
+                            </h2>
+                            <Link to="/patient/records" className="text-sm font-poppins font-semibold text-primary-500 hover:text-primary-600">
+                                View All
+                            </Link>
+                        </div>
+
+                        <div className="space-y-3">
+                            {isLoadingLabs ? (
+                                Array.from({ length: 2 }).map((_, i) => (
+                                    <div key={i} className="h-14 rounded-lg bg-neutral-100 animate-pulse" />
+                                ))
+                            ) : pendingLabs.length === 0 ? (
+                                <p className="text-sm font-poppins text-neutral-400 text-center py-4">No pending lab tests.</p>
+                            ) : (
+                                pendingLabs.map((lab, i) => (
+                                    <div key={i} className="p-4 bg-primary-50/50 border border-primary-100 rounded-xl group hover:bg-primary-50 transition-all">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="text-sm font-bold text-neutral-900">{lab.testName}</span>
+                                            <span className="text-[10px] font-bold uppercase tracking-wider text-primary-600 bg-primary-100 px-2 py-0.5 rounded-full">
+                                                {lab.status}
+                                            </span>
+                                        </div>
+                                        <div className="flex flex-col space-y-1 mb-3">
+                                            {lab.recommendedHospital && (
+                                                <div className="flex items-center text-[11px] text-neutral-600 font-poppins">
+                                                    <FiMapPin className="mr-1 text-primary-400 w-3 h-3" />
+                                                    {lab.recommendedHospital}
+                                                </div>
+                                            )}
+                                            {lab.dateDue && (
+                                                <div className="flex items-center text-[11px] text-neutral-600 font-poppins">
+                                                    <FiClock className="mr-1 text-primary-400 w-3 h-3" />
+                                                    Due: {new Date(lab.dateDue).toLocaleDateString()}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <Link
+                                            to="/patient/records"
+                                            className="w-full py-2 bg-white border border-primary-200 text-primary-600 hover:bg-primary-50 rounded-lg text-xs font-bold font-poppins flex items-center justify-center transition-colors"
+                                        >
+                                            Pay & Upload Result
+                                        </Link>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
 
                     {/* Active Prescriptions Widget */}
                     <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-6">

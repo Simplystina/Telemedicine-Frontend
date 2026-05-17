@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -6,6 +6,8 @@ import { FiX, FiUploadCloud, FiFile, FiCheckCircle } from "react-icons/fi";
 import FormInput from "@/features/auth/components/FormInput";
 import FormSelect from "@/features/auth/components/FormSelect";
 import FormDatePicker from "@/features/auth/components/FormDatePicker";
+import { useUploadLabResult } from "@/features/labs/hooks/useLabs";
+import type { LabResult } from "@/types";
 
 // ---- Zod Schema ---- (matches all columns in the Health Records table)
 const uploadSchema = z.object({
@@ -32,9 +34,11 @@ const DOCUMENT_TYPE_OPTIONS = [
 interface UploadDocumentModalProps {
     isOpen: boolean;
     onClose: () => void;
+    labResult?: LabResult | null;
 }
 
-function UploadDocumentModal({ isOpen, onClose }: UploadDocumentModalProps) {
+function UploadDocumentModal({ isOpen, onClose, labResult }: UploadDocumentModalProps) {
+    const { mutateAsync: uploadLab } = useUploadLabResult();
     const [dragOver, setDragOver] = useState(false);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -51,6 +55,21 @@ function UploadDocumentModal({ isOpen, onClose }: UploadDocumentModalProps) {
     } = useForm<UploadFormData>({
         resolver: zodResolver(uploadSchema),
     });
+
+    useEffect(() => {
+        if (labResult) {
+            reset({
+                title: labResult.testName,
+                type: "Lab Result",
+                date: new Date(labResult.requestedAt),
+                facilityName: "",
+                state: "",
+                address: "",
+                requestedBy: labResult.doctor ? `Dr. ${labResult.doctor.lastName}` : "",
+                notes: labResult.notes || "",
+            });
+        }
+    }, [labResult, reset]);
 
     if (!isOpen) return null;
 
@@ -89,18 +108,25 @@ function UploadDocumentModal({ isOpen, onClose }: UploadDocumentModalProps) {
         onClose();
     };
 
-    const onSubmit = (_data: UploadFormData) => {
+    const onSubmit = async (_data: UploadFormData) => {
         if (!selectedFile) {
             setFileError("Please select a file to upload.");
             return;
         }
         setIsSubmitting(true);
-        // Simulate upload — replace with real API later
-        setTimeout(() => {
+        try {
+            if (labResult) {
+                await uploadLab({ id: labResult.id, file: selectedFile });
+            } else {
+                // Simulate general upload
+                await new Promise(resolve => setTimeout(resolve, 1800));
+            }
             setIsSubmitting(false);
             setIsSuccess(true);
             setTimeout(() => handleClose(), 2500);
-        }, 1800);
+        } catch (error) {
+            setIsSubmitting(false);
+        }
     };
 
     const formatFileSize = (bytes: number) => {
@@ -115,7 +141,9 @@ function UploadDocumentModal({ isOpen, onClose }: UploadDocumentModalProps) {
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-neutral-100 shrink-0">
                     <div>
-                        <h2 className="text-xl font-archivo font-bold text-neutral-900">Upload Document</h2>
+                        <h2 className="text-xl font-archivo font-bold text-neutral-900">
+                            {labResult ? `Upload Result: ${labResult.testName}` : "Upload Document"}
+                        </h2>
                         <p className="text-sm text-neutral-500 font-poppins mt-0.5">PDF, JPG or PNG — max 10MB</p>
                     </div>
                     <button onClick={handleClose} className="p-2 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded-full transition-colors">
@@ -183,15 +211,6 @@ function UploadDocumentModal({ isOpen, onClose }: UploadDocumentModalProps) {
                             <div className="pt-2">
                                 <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400 font-poppins mb-4">Document Details</p>
                                 <div className="space-y-4">
-                                    <FormInput
-                                        label="Document Title"
-                                        type="text"
-                                        id="doc-title"
-                                        placeholder="e.g. Complete Blood Count — Oct 2023"
-                                        error={errors.title?.message}
-                                        {...register("title")}
-                                    />
-
                                     <div className="grid grid-cols-2 gap-4">
                                         <FormSelect
                                             label="Document Type"
@@ -232,40 +251,7 @@ function UploadDocumentModal({ isOpen, onClose }: UploadDocumentModalProps) {
                                         error={errors.facilityName?.message}
                                         {...register("facilityName")}
                                     />
-                                    <div className="grid grid-cols-3 gap-4">
-                                        <div className="col-span-2">
-                                            <FormInput
-                                                label="Address"
-                                                type="text"
-                                                id="address"
-                                                placeholder="e.g. 123 Herbert Macaulay Way"
-                                                error={errors.address?.message}
-                                                {...register("address")}
-                                            />
-                                        </div>
-                                        <FormInput
-                                            label="State"
-                                            type="text"
-                                            id="state"
-                                            placeholder="e.g. Lagos"
-                                            error={errors.state?.message}
-                                            {...register("state")}
-                                        />
-                                    </div>
                                 </div>
-                            </div>
-
-                            {/* Section: Doctor Details */}
-                            <div className="pt-2">
-                                <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400 font-poppins mb-4">Requested By</p>
-                                <FormInput
-                                    label="Doctor's Name"
-                                    type="text"
-                                    id="requested-by"
-                                    placeholder="e.g. Dr. Adaeze Okafor"
-                                    error={errors.requestedBy?.message}
-                                    {...register("requestedBy")}
-                                />
                             </div>
 
                             {/* Notes (optional) */}

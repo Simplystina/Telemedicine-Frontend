@@ -3,7 +3,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import { FiCalendar } from "react-icons/fi";
 
 interface FormDatePickerProps {
-    label: string;
+    label?: string;
     selected: Date | null;
     onChange: (date: Date | null) => void;
     error?: string;
@@ -31,12 +31,14 @@ function FormDatePicker({
 }: FormDatePickerProps) {
     return (
         <div className="w-full">
-            <label
-                htmlFor={id}
-                className="block font-poppins text-sm font-semibold text-neutral-600 mb-2"
-            >
-                {label}
-            </label>
+            {label && (
+                <label
+                    htmlFor={id}
+                    className="block font-poppins text-sm font-semibold text-neutral-600 mb-2"
+                >
+                    {label}
+                </label>
+            )}
             <div className="relative">
                 <FiCalendar className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 w-4 h-4 z-10 pointer-events-none" />
                 <DatePicker

@@ -4,6 +4,8 @@ import { useQueries } from '@tanstack/react-query';
 import ConsultationNoteModal from '../components/ConsultationNoteModal';
 import { useAppointments } from '@/features/appointments/hooks/useAppointments';
 import { useConsultationNotes } from '@/features/consultations/hooks/useConsultations';
+import { useAppointmentPrescriptions } from '@/features/prescriptions/hooks/usePrescriptions';
+import { useAppointmentLabResults } from '@/features/labs/hooks/useLabs';
 import { consultationApi } from '@/features/consultations/api/consultationApi';
 import type { Appointment, ConsultationNotes } from '@/types';
 
@@ -38,16 +40,20 @@ type ViewTab = 'pending' | 'all';
 
 function RecordCard({ appt, onFill, onEdit }: {
     appt: Appointment;
-    onFill: (patientName: string, appointmentId: string) => void;
-    onEdit: (patientName: string, appointmentId: string, notes: ConsultationNotes) => void;
+    onFill: (patientName: string, appointmentId: string, patientId: string) => void;
+    onEdit: (patientName: string, appointmentId: string, notes: ConsultationNotes, patientId: string, prescription?: any, labOrders?: any[]) => void;
 }) {
     const { data: existingNotes, isLoading: notesLoading } = useConsultationNotes(appt.id);
+    const { data: rxData, isLoading: rxLoading } = useAppointmentPrescriptions(appt.id);
+    const { data: labData, isLoading: labLoading } = useAppointmentLabResults(appt.id);
+    const existingPrescription = Array.isArray(rxData) ? rxData[0] : rxData;
+    const isLoading = notesLoading || rxLoading || labLoading;
     const patientName = getPatientName(appt);
     const dateLabel = formatAppointmentDate(appt.date, appt.startTime);
     const duration = calcDuration(appt.startTime, appt.endTime);
 
     return (
-        <div className="group bg-white rounded-4xl border border-neutral-200 p-6 flex flex-col md:flex-row md:items-center justify-between transition-all hover:shadow-xl hover:shadow-primary-500/5 hover:border-primary-100">
+        <div className="group bg-white rounded-4xl border border-neutral-200 p-6 flex flex-col md:flex-row md:items-center justify-between transition-all hover:shadow-xl hover:shadow-primary-50/5 hover:border-primary-100">
             <div className="flex items-center space-x-6 mb-4 md:mb-0">
                 <div className="w-14 h-14 rounded-2xl bg-neutral-50 flex items-center justify-center text-neutral-400 group-hover:bg-primary-50 group-hover:text-primary-600 transition-all shadow-inner">
                     <FiFileText className="w-6 h-6" />
@@ -81,28 +87,36 @@ function RecordCard({ appt, onFill, onEdit }: {
                 </div>
             </div>
 
-            <div className="flex items-center space-x-3 self-end md:self-auto">
+            <div className="flex items-center space-x-3 self-end md:self-auto relative z-10">
                 <button className="p-3 text-neutral-400 hover:text-primary-600 hover:bg-primary-50 rounded-xl transition-all" title="View Patient Details">
                     <FiArrowRight className="w-5 h-5" />
                 </button>
                 {appt.status === 'completed' && (
-                    notesLoading ? (
+                    isLoading ? (
                         <button disabled className="px-6 py-3 rounded-2xl border border-neutral-200 text-neutral-400 font-poppins font-bold text-sm flex items-center space-x-2 cursor-not-allowed opacity-60">
                             <div className="w-4 h-4 border-2 border-neutral-300 border-t-neutral-500 rounded-full animate-spin" />
                             <span>Checking...</span>
                         </button>
                     ) : existingNotes ? (
                         <button
-                            onClick={() => onEdit(patientName, appt.id, existingNotes)}
-                            className="px-6 py-3 bg-white border-2 border-primary-500 text-primary-600 rounded-2xl font-poppins font-bold text-sm hover:bg-primary-50 transition-all flex items-center space-x-2"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                onEdit(patientName, appt.id, existingNotes, String(appt.patientId || appt.patient?.id || ''), existingPrescription, labData);
+                            }}
+                            className="px-6 py-3 bg-white border-2 border-primary-500 text-primary-600 rounded-2xl font-poppins font-bold text-sm hover:bg-primary-50 transition-all flex items-center space-x-2 relative z-20"
                         >
                             <FiEdit2 className="w-4 h-4" />
                             <span>Edit Note</span>
                         </button>
                     ) : (
                         <button
-                            onClick={() => onFill(patientName, appt.id)}
-                            className="px-6 py-3 bg-primary-600 text-white rounded-2xl font-poppins font-bold text-sm shadow-lg shadow-primary-500/20 hover:bg-primary-700 transition-all flex items-center space-x-2"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                onFill(patientName, appt.id, String(appt.patientId || appt.patient?.id || ''));
+                            }}
+                            className="px-6 py-3 bg-primary-600 text-white rounded-2xl font-poppins font-bold text-sm shadow-lg shadow-primary-500/20 hover:bg-primary-700 transition-all flex items-center space-x-2 relative z-20"
                         >
                             <FiPlus className="w-4 h-4" />
                             <span>Fill Clinical Note</span>
@@ -115,13 +129,23 @@ function RecordCard({ appt, onFill, onEdit }: {
 }
 
 function DoctorPendingNotes() {
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
     const [selectedPatient, setSelectedPatient] = useState('');
+    const [selectedPatientId, setSelectedPatientId] = useState('');
     const [selectedAppointmentId, setSelectedAppointmentId] = useState('');
     const [selectedNotes, setSelectedNotes] = useState<ConsultationNotes | undefined>(undefined);
+    const [selectedPrescription, setSelectedPrescription] = useState<any>(undefined);
+    const [selectedLabOrders, setSelectedLabOrders] = useState<any[] | undefined>(undefined);
     const [activeTab, setActiveTab] = useState<ViewTab>('pending');
 
     const { data, isLoading } = useAppointments();
+    
+    // Fallback hooks just in case, but we prefer passing data directly for speed
+    const { data: fetchedNotes } = useConsultationNotes(selectedAppointmentId);
+    const { data: rxData } = useAppointmentPrescriptions(selectedAppointmentId);
+    const { data: fetchedLabOrders } = useAppointmentLabResults(selectedAppointmentId);
+    const fetchedPrescription = Array.isArray(rxData) ? rxData[0] : rxData;
+
     const completedAppointments = (data?.appointments ?? [])
         .filter(a => a.status === 'completed')
         .sort((a, b) => (b.date + b.startTime).localeCompare(a.date + a.startTime));
@@ -136,24 +160,29 @@ function DoctorPendingNotes() {
         })),
     });
 
-    const notesLoading = notesResults.some(r => r.isLoading);
     const unfiled = completedAppointments.filter((_, i) => !notesResults[i]?.data);
     const pendingCount = unfiled.length;
 
     const displayed = activeTab === 'pending' ? unfiled : completedAppointments;
 
-    const handleFill = (patientName: string, appointmentId: string) => {
+    const handleFill = (patientName: string, appointmentId: string, patientId: string) => {
         setSelectedNotes(undefined);
+        setSelectedPrescription(undefined);
+        setSelectedLabOrders(undefined);
         setSelectedPatient(patientName);
+        setSelectedPatientId(patientId);
         setSelectedAppointmentId(appointmentId);
-        setIsModalOpen(true);
+        setIsNoteModalOpen(true);
     };
 
-    const handleEdit = (patientName: string, appointmentId: string, notes: ConsultationNotes) => {
+    const handleEdit = (patientName: string, appointmentId: string, notes: ConsultationNotes, patientId: string, prescription?: any, labOrders?: any[]) => {
         setSelectedNotes(notes);
+        setSelectedPrescription(prescription);
+        setSelectedLabOrders(labOrders);
         setSelectedPatient(patientName);
+        setSelectedPatientId(patientId);
         setSelectedAppointmentId(appointmentId);
-        setIsModalOpen(true);
+        setIsNoteModalOpen(true);
     };
 
     return (
@@ -242,11 +271,21 @@ function DoctorPendingNotes() {
             </div>
 
             <ConsultationNoteModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
+                key={selectedAppointmentId}
+                isOpen={isNoteModalOpen}
+                onClose={() => {
+                    setIsNoteModalOpen(false);
+                    setSelectedAppointmentId('');
+                    setSelectedNotes(undefined);
+                    setSelectedPrescription(undefined);
+                    setSelectedLabOrders(undefined);
+                }}
                 patientName={selectedPatient}
                 appointmentId={selectedAppointmentId}
-                existingNotes={selectedNotes}
+                patientId={selectedPatientId}
+                existingNotes={selectedNotes || fetchedNotes}
+                existingPrescription={selectedPrescription || fetchedPrescription}
+                existingLabOrders={selectedLabOrders || fetchedLabOrders}
             />
         </div>
     );

@@ -8,6 +8,8 @@ import {
 import ScheduleAppointmentModal from "../components/ScheduleAppointmentModal";
 import ConsultationNoteModal from "../components/ConsultationNoteModal";
 import { useAppointments } from "@/features/appointments/hooks/useAppointments";
+import { useConsultationNotes } from "@/features/consultations/hooks/useConsultations";
+import { useAppointmentPrescriptions } from "@/features/prescriptions/hooks/usePrescriptions";
 import type { Appointment } from "@/types";
 
 function formatDate(dateStr: string): string {
@@ -29,6 +31,8 @@ function statusLabel(status: Appointment['status']): { label: string; className:
         case 'confirmed': return { label: 'Confirmed', className: 'bg-green-50 text-green-600 border-green-100' };
         case 'pending':   return { label: 'Pending', className: 'bg-amber-50 text-amber-600 border-amber-100' };
         case 'cancelled': return { label: 'Cancelled', className: 'bg-red-50 text-red-500 border-red-100' };
+        case 'no_show':   return { label: 'No Show', className: 'bg-orange-50 text-orange-600 border-orange-100' };
+        default:          return { label: 'Unknown', className: 'bg-neutral-50 text-neutral-500 border-neutral-200' };
     }
 }
 
@@ -45,9 +49,13 @@ function DoctorPatientDetail() {
     const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
     const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
     const [dismissedNoteIds, setDismissedNoteIds] = useState<Set<string>>(new Set());
-    const [mainTab, setMainTab] = useState<"timeline" | "results">("timeline");
-
+    const [mainTab, setMainTab] = useState<"timeline" | "results" | "records">("timeline");
     const { data, isLoading } = useAppointments();
+    
+    // Fetch data for the selected appointment if any (for editing/viewing)
+    const { data: existingNotes } = useConsultationNotes(selectedAppointmentId ?? '');
+    const { data: existingPrescriptions } = useAppointmentPrescriptions(selectedAppointmentId ?? '');
+    const existingPrescription = Array.isArray(existingPrescriptions) ? existingPrescriptions[0] : existingPrescriptions;
     const allAppointments = data?.appointments ?? [];
 
     const patientAppointments = allAppointments
@@ -222,14 +230,31 @@ function DoctorPatientDetail() {
                                                     </span>
                                                 </div>
 
-                                                {appt.reason ? (
+                                                {appt.reason && (
                                                     <div className="bg-neutral-50/50 rounded-3xl p-6 border border-neutral-100 group-hover:border-primary-100 group-hover:bg-primary-50/20 transition-all">
                                                         <h4 className="flex items-center text-xs font-bold text-neutral-400 uppercase tracking-widest font-poppins mb-2">
                                                             <FiFileText className="mr-2 text-primary-400" /> Reason
                                                         </h4>
                                                         <p className="text-sm text-neutral-700 font-poppins leading-relaxed italic">"{appt.reason}"</p>
                                                     </div>
-                                                ) : isPending && !dismissedNoteIds.has(appt.id) ? (
+                                                )}
+
+                                                {appt.status === 'completed' && (
+                                                    <div className="flex justify-end">
+                                                        <button
+                                                            onClick={() => { 
+                                                                setSelectedAppointmentId(appt.id); 
+                                                                setIsNoteModalOpen(true); 
+                                                            }}
+                                                            className="flex items-center space-x-2 px-6 py-2.5 bg-white border-2 border-primary-500 text-primary-600 rounded-2xl font-bold font-poppins text-xs hover:bg-primary-50 transition-all shadow-sm"
+                                                        >
+                                                            <FiFileText className="w-4 h-4" />
+                                                            <span>View/Edit Consultation Notes</span>
+                                                        </button>
+                                                    </div>
+                                                )}
+
+                                                {isPending && !dismissedNoteIds.has(appt.id) && !appt.reason && (
                                                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-amber-50/30 rounded-3xl p-6 border border-amber-100 group-hover:border-amber-200 transition-all">
                                                         <div className="flex items-center space-x-4">
                                                             <div className="p-3 bg-amber-100 rounded-2xl text-amber-600">
@@ -247,7 +272,7 @@ function DoctorPatientDetail() {
                                                             Add Note
                                                         </button>
                                                     </div>
-                                                ) : null}
+                                                )}
                                             </div>
                                         </div>
                                     );
@@ -319,6 +344,7 @@ function DoctorPatientDetail() {
             />
 
             <ConsultationNoteModal
+                key={selectedAppointmentId ?? 'new'}
                 isOpen={isNoteModalOpen}
                 onClose={() => {
                     if (selectedAppointmentId) setDismissedNoteIds(prev => new Set(prev).add(selectedAppointmentId));
@@ -327,6 +353,9 @@ function DoctorPatientDetail() {
                 }}
                 patientName={patientName}
                 appointmentId={selectedAppointmentId ?? ''}
+                patientId={patientId ?? ''}
+                existingNotes={existingNotes}
+                existingPrescription={existingPrescription}
             />
         </div>
     );

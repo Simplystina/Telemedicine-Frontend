@@ -1,8 +1,12 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { FiCalendar, FiVideo, FiClock, FiSearch, FiFilter, FiPlus, FiX, FiRefreshCw, FiCheck, FiAlertTriangle } from "react-icons/fi";
+import {useNavigate } from "react-router-dom";
+import { FiCalendar, FiVideo, FiClock, FiSearch, FiFilter, FiPlus, FiX, FiRefreshCw, FiCheck, FiAlertTriangle, FiFileText } from "react-icons/fi";
 import ScheduleAppointmentModal from "../components/ScheduleAppointmentModal";
+import ConsultationNoteModal from "../components/ConsultationNoteModal";
 import { useAppointments, useConfirmAppointment, useCancelAppointment, useUpdateAppointment } from "@/features/appointments/hooks/useAppointments";
+import { useConsultationNotes } from "@/features/consultations/hooks/useConsultations";
+import { useAppointmentPrescriptions } from "@/features/prescriptions/hooks/usePrescriptions";
+import { useAppointmentLabResults } from "@/features/labs/hooks/useLabs";
 import type { Appointment } from "@/types";
 
 type AppointmentStatus = "confirmed" | "pending" | "completed" | "cancelled";
@@ -19,6 +23,7 @@ interface DisplayAppointment {
     time: string;
     status: AppointmentStatus;
     notes?: string;
+    patientId: string;
 }
 
 function formatDate(dateStr: string): string {
@@ -41,9 +46,16 @@ function addMinutes(time24: string, mins: number): string {
 }
 
 function canJoinCall(date: string, startTime: string): boolean {
-    const appointmentStart = new Date(`${date}T${startTime}`);
-    const openAt = new Date(appointmentStart.getTime() - 10 * 60 * 1000);
-    return new Date() >= openAt;
+    try {
+        const normalizedDate = date.includes('T') ? date.split('T')[0] : date;
+        const normalizedTime = startTime.split(':').slice(0, 2).join(':');
+        const appointmentStart = new Date(`${normalizedDate}T${normalizedTime}:00`);
+        if (isNaN(appointmentStart.getTime())) return false;
+        const openAt = new Date(appointmentStart.getTime() - 10 * 60 * 1000);
+        return new Date() >= openAt;
+    } catch (e) {
+        return false;
+    }
 }
 
 function mapToDisplay(appt: Appointment): DisplayAppointment {
@@ -62,6 +74,7 @@ function mapToDisplay(appt: Appointment): DisplayAppointment {
         time: `${to12h(appt.startTime)} – ${to12h(appt.endTime)}`,
         status: appt.status as AppointmentStatus,
         notes: appt.reason,
+        patientId: appt.patientId || appt.patient?.id || '',
     };
 }
 
@@ -240,6 +253,7 @@ function RescheduleModal({ appt, onClose, onConfirm, isPending }: {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 function DoctorAppointments() {
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState("all");
     const [search, setSearch] = useState("");
     const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
@@ -247,13 +261,21 @@ function DoctorAppointments() {
     const [acceptTarget, setAcceptTarget] = useState<DisplayAppointment | null>(null);
     const [cancelTarget, setCancelTarget] = useState<DisplayAppointment | null>(null);
     const [rescheduleTarget, setRescheduleTarget] = useState<DisplayAppointment | null>(null);
+    const [editNotesTarget, setEditNotesTarget] = useState<DisplayAppointment | null>(null);
 
     const { data, isLoading } = useAppointments();
     const { mutate: confirmAppointment, isPending: isConfirming } = useConfirmAppointment();
     const { mutate: cancelAppointment, isPending: isCancelling } = useCancelAppointment();
     const { mutate: updateAppointment, isPending: isRescheduling } = useUpdateAppointment();
+    
+    // Fetch data for the selected appointment (for editing notes)
+    const { data: existingNotes } = useConsultationNotes(editNotesTarget?.id ?? '');
+    const { data: rxData } = useAppointmentPrescriptions(editNotesTarget?.id ?? '');
+    const { data: existingLabOrders } = useAppointmentLabResults(editNotesTarget?.id ?? '');
+    const existingPrescription = Array.isArray(rxData) ? rxData[0] : rxData;
 
-    const today = new Date().toISOString().slice(0, 10);
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     const appointments = (data?.appointments ?? []).map(mapToDisplay);
 
     const filtered = appointments.filter((a) => {
@@ -395,23 +417,24 @@ function DoctorAppointments() {
                                                 <FiRefreshCw className="w-3.5 h-3.5" /> Reschedule
                                             </button>
                                             {appt.type === "video" && (
-                                                canJoinCall(appt.rawDate, appt.rawStartTime) ? (
-                                                    <Link
-                                                        to={`/doctor/call/${appt.id}`}
-                                                        className="px-3 py-1.5 rounded-lg bg-primary-50 text-primary-600 border border-primary-200 hover:bg-primary-100 font-poppins font-semibold text-xs transition-colors flex items-center gap-1.5"
-                                                    >
-                                                        <FiVideo className="w-3.5 h-3.5" /> Join Call
-                                                    </Link>
-                                                ) : (
-                                                    <span
-                                                        title="Available 10 minutes before the appointment"
-                                                        className="px-3 py-1.5 rounded-lg bg-primary-50 text-primary-400 border border-primary-100 font-poppins font-semibold text-xs flex items-center gap-1.5 opacity-50 cursor-not-allowed"
-                                                    >
-                                                        <FiVideo className="w-3.5 h-3.5" /> Join Call
-                                                    </span>
-                                                )
+                                                <button
+                                                    onClick={() => canJoinCall(appt.rawDate, appt.rawStartTime) && navigate(`/doctor/call/${appt.id}`)}
+                                                    disabled={!canJoinCall(appt.rawDate, appt.rawStartTime)}
+                                                    title={canJoinCall(appt.rawDate, appt.rawStartTime) ? undefined : "Available 10 minutes before the appointment"}
+                                                    className="px-3 py-1.5 rounded-lg bg-primary-50 text-primary-600 border border-primary-200 hover:bg-primary-100 disabled:text-primary-400 disabled:border-primary-100 disabled:opacity-50 disabled:cursor-not-allowed font-poppins font-semibold text-xs transition-colors flex items-center gap-1.5"
+                                                >
+                                                    <FiVideo className="w-3.5 h-3.5" /> Join Call
+                                                </button>
                                             )}
                                         </div>
+                                    )}
+                                     {appt.status === "completed" && (
+                                        <button
+                                            onClick={() => setEditNotesTarget(appt)}
+                                            className="px-3 py-1.5 rounded-lg bg-white text-primary-600 border-2 border-primary-500 hover:bg-primary-50 font-poppins font-semibold text-xs transition-colors flex items-center gap-1.5"
+                                        >
+                                            <FiFileText className="w-3.5 h-3.5" /> Edit Notes
+                                        </button>
                                     )}
                                 </div>
                             </div>
@@ -454,6 +477,18 @@ function DoctorAppointments() {
             <ScheduleAppointmentModal
                 isOpen={isScheduleModalOpen}
                 onClose={() => setIsScheduleModalOpen(false)}
+            />
+
+            <ConsultationNoteModal
+                key={editNotesTarget?.id ?? 'new'}
+                isOpen={!!editNotesTarget}
+                onClose={() => setEditNotesTarget(null)}
+                patientName={editNotesTarget?.patient ?? ''}
+                appointmentId={editNotesTarget?.id ?? ''}
+                patientId={editNotesTarget?.patientId ?? ''}
+                existingNotes={existingNotes}
+                existingPrescription={existingPrescription}
+                existingLabOrders={existingLabOrders}
             />
         </div>
     );

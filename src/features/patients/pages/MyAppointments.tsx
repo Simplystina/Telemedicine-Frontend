@@ -17,6 +17,7 @@ interface DisplayAppointment {
     date: string;
     time: string;
     status: string;
+    noShowBy: string | null;
     rawDate: string;
     rawStartTime: string;
 }
@@ -35,10 +36,29 @@ function to12h(time24: string): string {
 }
 
 function canJoinCall(date: string, startTime: string): boolean {
-    const appointmentStart = new Date(`${date}T${startTime}`);
-    const openAt = new Date(appointmentStart.getTime() - 10 * 60 * 1000);
-    return new Date() >= openAt;
+    try {
+        // Normalize date to YYYY-MM-DD
+        const normalizedDate = date.includes('T') ? date.split('T')[0] : date;
+        // Normalize time to HH:mm (handle HH:mm:ss from backend)
+        const normalizedTime = startTime.split(':').slice(0, 2).join(':');
+        const appointmentStart = new Date(`${normalizedDate}T${normalizedTime}:00`);
+
+        if (isNaN(appointmentStart.getTime())) return false;
+
+        const openAt = new Date(appointmentStart.getTime() - 10 * 60 * 1000);
+        return new Date() >= openAt;
+    } catch (e) {
+        return false;
+    }
 }
+
+const STATUS_LABEL: Record<string, string> = {
+    pending: 'Pending',
+    confirmed: 'Confirmed',
+    completed: 'Completed',
+    cancelled: 'Cancelled',
+    no_show: 'No Show',
+};
 
 function mapToDisplay(appt: Appointment): DisplayAppointment {
     const nameParts = [appt.doctor?.firstName, appt.doctor?.lastName].filter(Boolean);
@@ -51,7 +71,8 @@ function mapToDisplay(appt: Appointment): DisplayAppointment {
         specialty: appt.doctor?.specialty?.name ?? '',
         date: formatDate(appt.date),
         time: `${to12h(appt.startTime)} - ${to12h(appt.endTime)}`,
-        status: appt.status.charAt(0).toUpperCase() + appt.status.slice(1),
+        status: STATUS_LABEL[appt.status] ?? appt.status,
+        noShowBy: appt.noShowBy ?? null,
         rawDate: appt.date,
         rawStartTime: appt.startTime,
     };
@@ -122,16 +143,17 @@ function MyAppointments() {
     const { data, isLoading } = useAppointments();
     const { mutate: cancelAppointment } = useCancelAppointment();
 
-    const today = new Date().toISOString().slice(0, 10);
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     const all = data?.appointments ?? [];
 
     const upcomingAppointments = all
-        .filter(a => (a.status === 'pending' || a.status === 'confirmed') && a.date >= today)
+        .filter(a => a.status === 'pending' || a.status === 'confirmed')
         .sort((a, b) => (a.date + a.startTime).localeCompare(b.date + b.startTime))
         .map(mapToDisplay);
 
     const pastAppointments = all
-        .filter(a => a.status === 'completed' || a.status === 'cancelled' || a.date < today)
+        .filter(a => a.status === 'completed' || a.status === 'cancelled' || a.status === 'no_show')
         .sort((a, b) => (b.date + b.startTime).localeCompare(a.date + a.startTime))
         .map(mapToDisplay);
 
@@ -201,9 +223,12 @@ function MyAppointments() {
                                         <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold font-poppins uppercase tracking-wide ${appointment.status === 'Confirmed' ? 'bg-green-100 text-green-700' :
                                             appointment.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' :
                                                 appointment.status === 'Completed' ? 'bg-blue-100 text-blue-700' :
-                                                    'bg-neutral-100 text-neutral-600'
+                                                    appointment.status === 'No Show' ? 'bg-orange-100 text-orange-700' :
+                                                        'bg-neutral-100 text-neutral-600'
                                             }`}>
-                                            {appointment.status}
+                                            {appointment.status === 'No Show' && appointment.noShowBy
+                                                ? `No Show by ${appointment.noShowBy.charAt(0).toUpperCase() + appointment.noShowBy.slice(1)}`
+                                                : appointment.status}
                                         </span>
                                     </div>
                                     <p className="font-poppins text-sm text-neutral-500 mb-2">{appointment.specialty}</p>

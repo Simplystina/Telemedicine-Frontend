@@ -7,6 +7,7 @@ import {
     FiFileText,
     FiMessageSquare,
     FiStar,
+    FiActivity,
     FiSettings,
     FiLogOut
 } from "react-icons/fi";
@@ -17,6 +18,7 @@ const navItems = [
     { name: "Browse Doctors", path: "/patient/browse-doctors", icon: FiSearch },
     { name: "My Appointments", path: "/patient/appointments", icon: FiCalendar },
     { name: "Health Records", path: "/patient/records", icon: FiFileText },
+    { name: "Lab Results", path: "/patient/labs", icon: FiActivity },
     { name: "Messages", path: "/patient/messages", icon: FiMessageSquare },
     { name: "Subscription", path: "/patient/subscription", icon: FiStar },
 ];

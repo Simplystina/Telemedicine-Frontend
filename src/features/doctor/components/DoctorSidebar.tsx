@@ -11,7 +11,8 @@ import {
     FiBell,
     FiSettings,
     FiLogOut,
-    FiClipboard
+    FiClipboard,
+    FiActivity
 } from "react-icons/fi";
 import Logo from "@assets/logo.png";
 
@@ -20,6 +21,7 @@ const navItems = [
     { name: "Appointments", path: "/doctor/appointments", icon: FiCalendar },
     { name: "My Patients", path: "/doctor/patients", icon: FiUsers },
     { name: "Clinical Records", path: "/doctor/records", icon: FiClipboard, badge: "3" },
+    { name: "Lab Results", path: "/doctor/labs", icon: FiActivity },
     { name: "Messages", path: "/doctor/messages", icon: FiMessageSquare },
     { name: "Availability", path: "/doctor/availability", icon: FiClock },
     { name: "Earnings", path: "/doctor/earnings", icon: FiDollarSign },

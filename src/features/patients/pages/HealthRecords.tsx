@@ -1,13 +1,14 @@
 import { useState } from "react";
 import {
-    FiDownload, FiEye, FiFileText, FiFilter, FiSearch,
-    FiFilePlus, FiX, FiCalendar, FiAlertCircle
+    FiDownload, FiEye, FiFileText, FiSearch,
+    FiFilePlus, FiX, FiCalendar, FiAlertCircle, FiActivity
 } from "react-icons/fi";
 import { FaUserDoctor } from "react-icons/fa6";
 import UploadDocumentModal from "../components/UploadDocumentModal";
 import { useAppointments } from "@/features/appointments/hooks/useAppointments";
 import { usePrescriptions } from "@/features/prescriptions/hooks/usePrescriptions";
 import { useConsultationNotes } from "@/features/consultations/hooks/useConsultations";
+import { useLabResults } from "@/features/labs/hooks/useLabs";
 import type { Appointment, Prescription } from "@/types";
 
 type RecordType = "visit-note" | "prescription";
@@ -43,7 +44,11 @@ function NoteDetailModal({ appointmentId, doctorName, visitDate, onClose }: {
     visitDate: string;
     onClose: () => void;
 }) {
-    const { data: notes, isLoading } = useConsultationNotes(appointmentId);
+    const { data: notes, isLoading: notesLoading } = useConsultationNotes(appointmentId);
+    const { data: labResults = [], isLoading: labsLoading } = useLabResults();
+
+    const isLoading = notesLoading || labsLoading;
+    const associatedLabs = labResults.filter(l => String(l.appointmentId) === String(appointmentId));
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/50 backdrop-blur-sm">
@@ -76,34 +81,55 @@ function NoteDetailModal({ appointmentId, doctorName, visitDate, onClose }: {
                         <div className="space-y-3">
                             {[1, 2, 3].map(i => <div key={i} className="h-16 rounded-xl bg-neutral-100 animate-pulse" />)}
                         </div>
-                    ) : !notes ? (
+                    ) : !notes && associatedLabs.length === 0 ? (
                         <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-100 rounded-xl">
                             <FiAlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
                             <p className="text-sm font-poppins text-amber-800">
-                                No clinical notes have been added for this visit yet.
+                                No clinical notes found for this visit.
                             </p>
                         </div>
                     ) : (
-                        <div className="space-y-4">
-                            {notes.diagnosis && (
+                        <div className="space-y-6">
+                            {notes?.patientNotes && (
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400 font-poppins mb-1.5">Diagnosis</p>
-                                    <p className="text-sm font-poppins text-neutral-700 bg-neutral-50 rounded-xl p-4 border border-neutral-100 leading-relaxed">{notes.diagnosis}</p>
+                                    <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400 font-poppins mb-2">Doctor's Note to You</p>
+                                    <p className="text-sm font-poppins text-neutral-700 bg-neutral-50 rounded-xl p-4 border border-neutral-100 leading-relaxed">{notes.patientNotes}</p>
                                 </div>
                             )}
-                            {notes.symptoms && (
+
+                            {associatedLabs.length > 0 && (
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400 font-poppins mb-1.5">Symptoms</p>
-                                    <p className="text-sm font-poppins text-neutral-700 bg-neutral-50 rounded-xl p-4 border border-neutral-100 leading-relaxed">{notes.symptoms}</p>
+                                    <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400 font-poppins mb-2 flex items-center">
+                                        <FiActivity className="mr-2 text-primary-500" /> Associated Lab Requests
+                                    </p>
+                                    <div className="space-y-2">
+                                        {associatedLabs.map(lab => (
+                                            <div key={lab.id} className="p-3 bg-neutral-50 rounded-xl border border-neutral-100 flex items-center justify-between">
+                                                <div className="flex items-center space-x-3">
+                                                    <div className="w-8 h-8 rounded-lg bg-white border border-neutral-200 flex items-center justify-center text-primary-500">
+                                                        <FiActivity className="w-4 h-4" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-bold text-neutral-800 font-poppins">{lab.testName}</p>
+                                                        <p className="text-[10px] text-neutral-500 font-poppins">Status: <span className="capitalize font-semibold">{lab.status}</span></p>
+                                                    </div>
+                                                </div>
+                                                {lab.status === 'completed' && lab.filePath && (
+                                                    <button 
+                                                        onClick={() => window.open(lab.filePath, '_blank')}
+                                                        className="p-1.5 text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                                                        title="View Result"
+                                                    >
+                                                        <FiEye className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
-                            {notes.notes && (
-                                <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400 font-poppins mb-1.5">Doctor's Notes</p>
-                                    <p className="text-sm font-poppins text-neutral-700 bg-neutral-50 rounded-xl p-4 border border-neutral-100 leading-relaxed">{notes.notes}</p>
-                                </div>
-                            )}
-                            {notes.followUpDate && (
+
+                            {notes?.followUpDate && (
                                 <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-100 rounded-xl">
                                     <FiCalendar className="w-5 h-5 text-green-600 shrink-0" />
                                     <div>
@@ -338,7 +364,7 @@ function HealthRecords() {
             </div>
 
             {/* Quick Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="bg-white rounded-2xl border border-neutral-200 p-5 shadow-sm flex items-center space-x-4">
                     <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
                         <FaUserDoctor className="w-6 h-6" />
@@ -361,17 +387,6 @@ function HealthRecords() {
                         </p>
                     </div>
                 </div>
-                <div className="bg-white rounded-2xl border border-neutral-200 p-5 shadow-sm flex items-center space-x-4">
-                    <div className="w-12 h-12 rounded-xl bg-green-50 text-green-600 flex items-center justify-center">
-                        <FiCalendar className="w-6 h-6" />
-                    </div>
-                    <div>
-                        <p className="text-sm font-poppins text-neutral-500">Total Records</p>
-                        <p className="text-2xl font-archivo font-bold text-neutral-900">
-                            {isLoading ? "—" : allRecords.length}
-                        </p>
-                    </div>
-                </div>
             </div>
 
             {/* Records List */}
@@ -387,9 +402,6 @@ function HealthRecords() {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <button className="flex items-center justify-center px-5 py-2.5 bg-white border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors text-neutral-700 font-poppins text-sm font-semibold shrink-0">
-                        <FiFilter className="mr-2 text-neutral-500" /> Filter
-                    </button>
                 </div>
 
                 <div className="overflow-x-auto">
@@ -487,7 +499,9 @@ function HealthRecords() {
             )}
             <UploadDocumentModal
                 isOpen={isUploadOpen}
-                onClose={() => setIsUploadOpen(false)}
+                onClose={() => {
+                    setIsUploadOpen(false);
+                }}
             />
         </div>
     );
