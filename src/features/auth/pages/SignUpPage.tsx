@@ -3,7 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'react-router-dom';
 import { FaUserDoctor } from "react-icons/fa6";
 import { FaUser } from "react-icons/fa";
-import { signUpSchema, type SignUpFormData } from '../validation/schemas';
+import { signUpSchema, type SignUpFormData, type SignUpFormInput } from '../validation/schemas';
 import FormInput from '../components/FormInput';
 import PasswordInput from '../components/PasswordInput';
 import SpecialtySelect from '../components/SpecialtyMultiSelect';
@@ -22,7 +22,7 @@ function SignUpPage() {
         watch,
         setValue,
         formState: { errors },
-    } = useForm<SignUpFormData>({
+    } = useForm<SignUpFormInput, unknown, SignUpFormData>({
         resolver: zodResolver(signUpSchema),
         defaultValues: {
             firstName: '',
