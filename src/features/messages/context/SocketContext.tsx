@@ -3,7 +3,7 @@ import { io, type Socket } from 'socket.io-client';
 import { useAuthStore } from '@/features/auth/store/useAuthStore';
 import type { Message } from '@/types';
 
-const SOCKET_URL = ((import.meta.env.VITE_API_URL as string) || 'http://localhost:3000/api/v1').replace(/\/api\/v\d+$/, '');
+const SOCKET_URL = (import.meta.env.VITE_API_URL as string).replace(/\/api\/v\d+$/, '');
 
 // ── Module-level singletons ──────────────────────────────────────────────────
 // Listener sets live at module level so socket event handlers never capture
