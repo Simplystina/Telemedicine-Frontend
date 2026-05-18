@@ -31,7 +31,7 @@ function SignUpPage() {
             role: 'patient',
             hospital: '',
             licenseNo: '',
-            yearsOfPractice: '',
+            yearsOfPractice: undefined,
             specialtyId: undefined,
             password: '',
             confirmPassword: '',

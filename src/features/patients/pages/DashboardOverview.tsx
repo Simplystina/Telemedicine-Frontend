@@ -57,8 +57,6 @@ function DashboardOverview() {
         .sort((a, b) => b.issuedAt.localeCompare(a.issuedAt))
         .flatMap(rx => rx.medications)
         .slice(0, 3);
-    const now = new Date();
-    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     const nextAppointment = (apptData?.appointments ?? [])
         .filter(a => a.status === 'confirmed' || a.status === 'pending')
         .sort((a, b) => (a.date + a.startTime).localeCompare(b.date + b.startTime))[0];

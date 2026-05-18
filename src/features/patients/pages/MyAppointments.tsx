@@ -143,8 +143,6 @@ function MyAppointments() {
     const { data, isLoading } = useAppointments();
     const { mutate: cancelAppointment } = useCancelAppointment();
 
-    const now = new Date();
-    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     const all = data?.appointments ?? [];
 
     const upcomingAppointments = all
