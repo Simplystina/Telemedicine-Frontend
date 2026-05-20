@@ -38,7 +38,7 @@ function DoctorSidebar({ className = "hidden lg:flex sticky top-0", onClose }: D
     const { logout } = useAuth();
 
     return (
-        <aside className={`w-64 h-screen bg-white border-r border-neutral-200 flex-col shrink-0 ${className}`}>
+        <aside className={`w-64 h-full bg-white border-r border-neutral-200 flex-col shrink-0 ${className}`}>
             {/* Logo Area */}
             <div className="h-16 flex items-center px-6 border-b border-neutral-200 shrink-0">
                 <Link to="/" className="flex items-center space-x-2">

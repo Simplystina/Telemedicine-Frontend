@@ -1,11 +1,12 @@
 import { Link } from "react-router-dom";
 import {
     FiCalendar, FiUsers, FiMessageSquare,
-    FiClock, FiVideo, FiCheckCircle, FiAlertCircle, FiActivity
+    FiClock, FiVideo, FiCheckCircle, FiAlertCircle, FiActivity, FiShield
 } from "react-icons/fi";
 import { useAppointments } from "@/features/appointments/hooks/useAppointments";
 import { useAuthStore } from "@/features/auth/store/useAuthStore";
 import { useLabResults } from "@/features/labs/hooks/useLabs";
+import { useMyDoctorProfile, useMyAvailability } from "@/features/doctor/hooks/useDoctors";
 
 function to12h(time24: string): string {
     const [h, m] = time24.split(':').map(Number);
@@ -26,19 +27,29 @@ function DoctorDashboardOverview() {
     const { user } = useAuthStore();
     const { data: apptData, isLoading } = useAppointments();
     const { data: labResults = [], isLoading: labsLoading } = useLabResults();
+    const { data: profile } = useMyDoctorProfile();
+    const { data: availability = [] } = useMyAvailability();
 
     const today = new Date().toISOString().slice(0, 10);
-    const todayAppointments = (apptData?.appointments ?? [])
+    const allAppointments = apptData?.appointments ?? [];
+    const todayAppointments = allAppointments
         .filter(a => a.date === today)
         .sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+    const uniquePatientCount = new Set(allAppointments.map(a => a.patient?.id ?? a.patientId)).size;
+    const pendingLabCount = labResults.filter(l => l.status !== 'completed').length;
+    const pendingNotesCount = allAppointments.filter(a => a.status === 'completed').length;
+
+    const profileComplete = !!(profile?.firstName && profile?.lastName && profile?.specialty && profile?.hospital);
+    const availabilitySet = availability.length > 0;
 
     const doctorDisplayName = user?.firstName ? `Dr. ${user.firstName}` : 'Doctor';
 
     const statCards = [
         { label: "Today's Appointments", value: isLoading ? '—' : String(todayAppointments.length), icon: FiCalendar, color: "primary", change: "scheduled for today" },
-        { label: "Total Patients", value: "128", icon: FiUsers, color: "blue", change: "+5 this week" },
-        { label: "Pending Lab Results", value: labsLoading ? '—' : String(labResults.filter(l => l.status !== 'completed').length), icon: FiActivity, color: "amber", change: "awaiting uploads" },
-        { label: "Unread Messages", value: "7", icon: FiMessageSquare, color: "secondary", change: "3 urgent" },
+        { label: "Total Patients", value: isLoading ? '—' : String(uniquePatientCount), icon: FiUsers, color: "blue", change: "across all appointments" },
+        { label: "Pending Lab Results", value: labsLoading ? '—' : String(pendingLabCount), icon: FiActivity, color: "amber", change: "awaiting uploads" },
+        { label: "Completed Appointments", value: isLoading ? '—' : String(allAppointments.filter(a => a.status === 'completed').length), icon: FiMessageSquare, color: "secondary", change: "total completed" },
     ];
 
     return (
@@ -51,6 +62,31 @@ function DoctorDashboardOverview() {
                     Here's your practice overview for today.
                 </p>
             </div>
+
+            {/* Account status banner */}
+            {profile?.status && profile.status !== 'verified' && (
+                <div className={`flex items-start gap-3 p-4 rounded-2xl border ${
+                    profile.status === 'suspended'
+                        ? 'bg-red-50 border-red-200'
+                        : 'bg-amber-50 border-amber-200'
+                }`}>
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                        profile.status === 'suspended' ? 'bg-red-100' : 'bg-amber-100'
+                    }`}>
+                        <FiShield className={`w-5 h-5 ${profile.status === 'suspended' ? 'text-red-600' : 'text-amber-600'}`} />
+                    </div>
+                    <div>
+                        <p className={`text-sm font-bold font-poppins ${profile.status === 'suspended' ? 'text-red-900' : 'text-amber-900'}`}>
+                            {profile.status === 'suspended' ? 'Account Suspended' : 'Account Pending Approval'}
+                        </p>
+                        <p className={`text-xs font-poppins mt-0.5 ${profile.status === 'suspended' ? 'text-red-700' : 'text-amber-700'}`}>
+                            {profile.status === 'suspended'
+                                ? 'Your account has been suspended. Please contact support for assistance.'
+                                : 'Your account is under review. You will be notified once an admin approves your profile.'}
+                        </p>
+                    </div>
+                </div>
+            )}
 
             {/* Stat Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
@@ -169,24 +205,36 @@ function DoctorDashboardOverview() {
                         <div className="space-y-3">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-2 text-sm font-poppins text-neutral-700">
-                                    <FiCheckCircle className="w-4 h-4 text-green-500" />
+                                    {profileComplete
+                                        ? <FiCheckCircle className="w-4 h-4 text-green-500" />
+                                        : <FiAlertCircle className="w-4 h-4 text-amber-500" />}
                                     <span>Profile Complete</span>
                                 </div>
-                                <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded">100%</span>
+                                <span className={`text-xs font-bold px-2 py-1 rounded ${profileComplete ? 'text-green-600 bg-green-50' : 'text-amber-600 bg-amber-50'}`}>
+                                    {profileComplete ? 'Yes' : 'Incomplete'}
+                                </span>
                             </div>
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-2 text-sm font-poppins text-neutral-700">
-                                    <FiCheckCircle className="w-4 h-4 text-green-500" />
+                                    {availabilitySet
+                                        ? <FiCheckCircle className="w-4 h-4 text-green-500" />
+                                        : <FiAlertCircle className="w-4 h-4 text-amber-500" />}
                                     <span>Availability Set</span>
                                 </div>
-                                <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded">Yes</span>
+                                <span className={`text-xs font-bold px-2 py-1 rounded ${availabilitySet ? 'text-green-600 bg-green-50' : 'text-amber-600 bg-amber-50'}`}>
+                                    {availabilitySet ? 'Yes' : 'Not set'}
+                                </span>
                             </div>
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-2 text-sm font-poppins text-neutral-700">
-                                    <FiAlertCircle className="w-4 h-4 text-amber-500" />
+                                    {pendingNotesCount > 0
+                                        ? <FiAlertCircle className="w-4 h-4 text-amber-500" />
+                                        : <FiCheckCircle className="w-4 h-4 text-green-500" />}
                                     <span>Pending Reviews</span>
                                 </div>
-                                <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded">3</span>
+                                <span className={`text-xs font-bold px-2 py-1 rounded ${pendingNotesCount > 0 ? 'text-amber-600 bg-amber-50' : 'text-green-600 bg-green-50'}`}>
+                                    {isLoading ? '—' : pendingNotesCount > 0 ? String(pendingNotesCount) : 'All done'}
+                                </span>
                             </div>
                         </div>
                     </div>

@@ -24,6 +24,7 @@ export const doctorApi = {
                 ...d,
                 email: d.user?.email ?? '',
                 isVerified: d.status === 'verified',
+                status: d.status,
             })),
             total: data.meta.total,
             page: data.meta.page,

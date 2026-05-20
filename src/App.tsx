@@ -44,9 +44,13 @@ import AdminLoginPage from "@/features/admin/pages/AdminLoginPage";
 import ProtectedRoute from "@/features/auth/components/ProtectedRoute";
 import AdminLayout from "@/features/admin/components/AdminLayout";
 import AdminDashboard from "@/features/admin/pages/AdminDashboard";
-import AdminUserManagement from "@/features/admin/pages/AdminUserManagement";
 import AdminDoctorList from "@/features/admin/pages/AdminDoctorList";
 import AdminDoctorDetail from "@/features/admin/pages/AdminDoctorDetail";
+import AdminPatients from "@/features/admin/pages/AdminPatients";
+import AdminPatientDetail from "@/features/admin/pages/AdminPatientDetail";
+import AdminAppointments from "@/features/admin/pages/AdminAppointments";
+import AdminAppointmentDetail from "@/features/admin/pages/AdminAppointmentDetail";
+import AdminSpecialties from "@/features/admin/pages/AdminSpecialties";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -131,9 +135,12 @@ function App() {
               <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="doctors" element={<AdminDoctorList />} />
               <Route path="doctors/:doctorId" element={<AdminDoctorDetail />} />
-              <Route path="patients" element={<AdminUserManagement />} />
+              <Route path="patients" element={<AdminPatients />} />
+              <Route path="patients/:patientId" element={<AdminPatientDetail />} />
+              <Route path="appointments" element={<AdminAppointments />} />
+              <Route path="appointments/:appointmentId" element={<AdminAppointmentDetail />} />
+              <Route path="specialties" element={<AdminSpecialties />} />
               <Route path="health" element={<div className="p-6 bg-white rounded-2xl border border-neutral-200 shadow-sm"><h1 className="text-2xl font-archivo font-bold text-neutral-900 mb-1">Platform Health</h1><p className="text-neutral-600 font-poppins text-sm">Real-time infrastructure monitoring.</p></div>} />
-              <Route path="settings" element={<div className="p-6 bg-white rounded-2xl border border-neutral-200 shadow-sm"><h1 className="text-2xl font-archivo font-bold text-neutral-900 mb-1">System Config</h1><p className="text-neutral-600 font-poppins text-sm">Tune platform parameters.</p></div>} />
             </Route>
           </Route>
         </Routes>

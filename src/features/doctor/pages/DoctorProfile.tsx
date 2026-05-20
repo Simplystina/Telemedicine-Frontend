@@ -1,7 +1,25 @@
 import { useState, useEffect } from "react";
-import { FiUser, FiMail, FiEdit2, FiCheck, FiShield, FiBriefcase } from "react-icons/fi";
+import { FiUser, FiMail, FiEdit2, FiCheck, FiShield, FiBriefcase, FiCheckCircle, FiClock, FiAlertCircle } from "react-icons/fi";
+import type { DoctorStatus } from "@/types";
 import { useMyDoctorProfile, useUpdateDoctorProfile, useSpecialties } from "@/features/doctor/hooks/useDoctors";
 import SpecialtySelect from "@/features/auth/components/SpecialtyMultiSelect";
+
+const STATUS_CONFIG: Record<DoctorStatus, { label: string; icon: React.ElementType; bg: string; text: string; border: string }> = {
+    verified:  { label: "Verified",         icon: FiCheckCircle,  bg: "bg-green-50",  text: "text-green-700",  border: "border-green-200" },
+    pending:   { label: "Pending Approval", icon: FiClock,        bg: "bg-amber-50",  text: "text-amber-700",  border: "border-amber-200" },
+    suspended: { label: "Suspended",        icon: FiAlertCircle,  bg: "bg-red-50",    text: "text-red-700",    border: "border-red-200"   },
+};
+
+function StatusBadge({ status }: { status: DoctorStatus }) {
+    const cfg = STATUS_CONFIG[status];
+    const Icon = cfg.icon;
+    return (
+        <div className={`mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-bold font-poppins ${cfg.bg} ${cfg.text} ${cfg.border}`}>
+            <Icon className="w-3.5 h-3.5" />
+            {cfg.label}
+        </div>
+    );
+}
 
 function DoctorProfile() {
     const { data: doctorData } = useMyDoctorProfile();
@@ -129,6 +147,8 @@ function DoctorProfile() {
                     {form.hospital && (
                         <p className="text-xs font-poppins text-neutral-500 mt-0.5">{form.hospital}</p>
                     )}
+
+                    {doctorData?.status && <StatusBadge status={doctorData.status} />}
 
                     <div className="mt-5 w-full space-y-3 text-left">
                         <div className="flex items-center space-x-2 text-sm font-poppins text-neutral-600">

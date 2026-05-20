@@ -95,6 +95,8 @@ export interface Specialty {
     name: string;
 }
 
+export type DoctorStatus = "verified" | "pending" | "suspended";
+
 export interface Doctor {
     id: string;
     firstName?: string;
@@ -109,6 +111,7 @@ export interface Doctor {
     specialty?: Specialty;
     rating?: number;
     isVerified: boolean;
+    status?: DoctorStatus;
 }
 
 export interface DoctorsListResponse {
@@ -170,7 +173,7 @@ export interface UpdatePatientProfileData {
 
 // ─── Appointments ─────────────────────────────────────────────────────────────
 
-export type AppointmentStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no_show';
+export type AppointmentStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no_show' | 'rescheduled' | 'expired';
 export type ConsultationType = 'video' | 'in-person';
 
 export interface AppointmentDoctor {
@@ -334,7 +337,47 @@ export interface BulkLabResultData {
 
 // ─── Admin ────────────────────────────────────────────────────────────────────
 
-export type DoctorStatus = "verified" | "pending" | "suspended";
+export interface AdminPatient {
+    id: string;
+    userId: string;
+    user?: {
+        id: string;
+        email: string;
+        isActive: boolean;
+        createdAt: string;
+    };
+    firstName?: string;
+    lastName?: string;
+    dob?: string;
+    gender?: string;
+    bloodType?: string;
+    phone?: string;
+}
+
+export interface AdminPatientsListResponse {
+    data: AdminPatient[];
+    meta: { total: number; page: number; limit: number; totalPages: number };
+}
+
+export interface AdminPatientsQueryParams {
+    search?: string;
+    page?: number;
+    limit?: number;
+}
+
+export interface AdminAppointmentsListResponse {
+    data: Appointment[];
+    meta: { total: number; page: number; limit: number; totalPages: number };
+}
+
+export interface AdminAppointmentsQueryParams {
+    status?: AppointmentStatus;
+    from?: string;
+    to?: string;
+    page?: number;
+    limit?: number;
+}
+
 
 export interface AdminDoctor {
     id: string;

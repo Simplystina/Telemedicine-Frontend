@@ -3,17 +3,18 @@ import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useAuthStore } from "@/features/auth/store/useAuthStore";
 import {
-    FiHome, FiUsers, FiActivity, FiShield, FiSettings,
-    FiBell, FiMenu, FiLogOut
+    FiHome, FiUsers, FiActivity, FiShield, FiGrid,
+    FiBell, FiMenu, FiLogOut, FiCalendar,
 } from "react-icons/fi";
 import Logo from "@assets/logo.png";
 
 const navItems = [
     { name: "Overview", path: "/admin/dashboard", icon: FiHome, end: true },
     { name: "Doctor Moderation", path: "/admin/doctors", icon: FiShield },
-    { name: "User Registry", path: "/admin/patients", icon: FiUsers },
+    { name: "Patient Registry", path: "/admin/patients", icon: FiUsers },
+    { name: "Appointments", path: "/admin/appointments", icon: FiCalendar },
+    { name: "Specialties", path: "/admin/specialties", icon: FiGrid },
     { name: "Platform Health", path: "/admin/health", icon: FiActivity },
-    { name: "System Config", path: "/admin/settings", icon: FiSettings },
 ];
 
 function AdminSidebar({ className = "hidden lg:flex sticky top-0", onClose }: { className?: string; onClose?: () => void }) {

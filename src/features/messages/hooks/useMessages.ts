@@ -7,7 +7,7 @@ export function useConversationMessages(otherId: string | null) {
         queryKey: ['conversation', otherId],
         queryFn: () => messagesApi.getHistory(otherId!),
         enabled: !!otherId,
-        staleTime: 10_000,
+        refetchInterval: 3000,
     });
 }
 

@@ -23,6 +23,7 @@ function ensureSocket(token: string) {
 
     const socket = io(`${SOCKET_URL}/messaging`, {
         auth: { token },
+        transports: ['websocket', 'polling'],
         reconnectionAttempts: 10,
     });
 

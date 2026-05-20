@@ -63,7 +63,7 @@ function DoctorMessages() {
         const isMine = senderId === String(myId);
         const otherPersonId = isMine ? String(msg.receiverId) : senderId;
 
-        if (otherPersonId === current) {
+        if (current !== null && otherPersonId === String(current)) {
             appendMessage(current, msg);
         } else if (!isMine) {
             setUnread(prev => ({ ...prev, [senderId]: (prev[senderId] ?? 0) + 1 }));

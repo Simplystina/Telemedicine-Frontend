@@ -19,18 +19,8 @@ const typeConfig: Record<NotifType, { icon: React.ElementType; color: string; bg
     system: { icon: FiBell, color: "text-amber-600", bg: "bg-amber-50" },
 };
 
-const INITIAL_NOTIFS: Notification[] = [
-    { id: "n1", type: "appointment", title: "New Appointment Booked", body: "Jane Doe scheduled a follow-up for Mar 31 at 09:00 AM.", time: "2 minutes ago", read: false },
-    { id: "n2", type: "message", title: "New Message from Emeka Eze", body: "\"Good morning Doctor, my BP was slightly elevated today...\"", time: "20 minutes ago", read: false },
-    { id: "n3", type: "payment", title: "Payment Received", body: "₦15,000 consultation fee from Jane Doe has been processed.", time: "1 hour ago", read: false },
-    { id: "n4", type: "appointment", title: "Appointment Cancelled", body: "Fatima Musa cancelled her appointment for Mar 27 at 10:00 AM.", time: "3 hours ago", read: true },
-    { id: "n5", type: "system", title: "Profile Verification Complete", body: "Your credentials have been verified. You are now fully visible to patients.", time: "Yesterday", read: true },
-    { id: "n6", type: "payment", title: "Payout Initiated", body: "₦350,000 payout to your bank account has been initiated.", time: "2 days ago", read: true },
-    { id: "n7", type: "message", title: "New Message from Aisha Bello", body: "\"When should I take my next dose?\"", time: "3 days ago", read: true },
-];
-
 function DoctorNotifications() {
-    const [notifs, setNotifs] = useState(INITIAL_NOTIFS);
+    const [notifs, setNotifs] = useState<Notification[]>([]);
     const unreadCount = notifs.filter(n => !n.read).length;
 
     const markAllRead = () => setNotifs(prev => prev.map(n => ({ ...n, read: true })));
@@ -76,12 +66,10 @@ function DoctorNotifications() {
                                     key={notif.id}
                                     className={`flex items-start space-x-4 p-5 transition-colors group ${!notif.read ? "bg-primary-50/30" : "hover:bg-neutral-50"}`}
                                 >
-                                    {/* Icon */}
                                     <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${cfg.bg}`}>
                                         <Icon className={`w-5 h-5 ${cfg.color}`} />
                                     </div>
 
-                                    {/* Content */}
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-start justify-between gap-2">
                                             <p className={`text-sm font-poppins leading-snug ${!notif.read ? "font-bold text-neutral-900" : "font-semibold text-neutral-700"}`}>
@@ -102,7 +90,6 @@ function DoctorNotifications() {
                                         <p className="text-[11px] font-poppins text-neutral-400 mt-1.5">{notif.time}</p>
                                     </div>
 
-                                    {/* Unread dot */}
                                     {!notif.read && (
                                         <div className="w-2.5 h-2.5 rounded-full bg-primary-500 shrink-0 mt-2" />
                                     )}
