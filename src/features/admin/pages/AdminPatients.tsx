@@ -45,15 +45,15 @@ function AdminPatients() {
                             className="bg-transparent border-none outline-none text-sm font-poppins text-neutral-900 w-full placeholder:text-neutral-400"
                         />
                     </div>
-                    <div className="flex items-center bg-white border border-neutral-200 rounded-lg shadow-sm overflow-hidden">
+                    <div className="flex items-center bg-neutral-200/70 border border-neutral-200 rounded-xl p-1 gap-0.5 shadow-inner">
                         {STATUS_TABS.map(tab => (
                             <button
                                 key={tab.value}
                                 onClick={() => setStatusFilter(tab.value)}
-                                className={`px-4 py-2.5 text-xs font-semibold font-poppins transition-colors ${
+                                className={`relative px-4 py-2 text-xs font-semibold font-poppins transition-all duration-200 ${
                                     statusFilter === tab.value
-                                        ? "bg-primary-500 text-white"
-                                        : "text-neutral-500 hover:bg-neutral-50"
+                                        ? "bg-primary-500 text-white shadow-sm"
+                                        : "text-neutral-500 hover:text-neutral-700"
                                 }`}
                             >
                                 {tab.label}

@@ -84,13 +84,15 @@ function AdminAppointments() {
                 </div>
             </div>
 
-            <div className="flex items-center bg-white border border-neutral-200 rounded-xl shadow-sm overflow-x-auto">
+            <div className="flex items-center bg-neutral-200/70 border border-neutral-200 rounded-xl p-1 gap-0.5 shadow-inner overflow-x-auto">
                 {STATUS_TABS.map(tab => (
                     <button
                         key={tab.value}
                         onClick={() => setStatusFilter(tab.value)}
-                        className={`px-5 py-3 text-xs font-semibold font-poppins whitespace-nowrap transition-colors ${
-                            statusFilter === tab.value ? "bg-primary-500 text-white" : "text-neutral-500 hover:bg-neutral-50"
+                        className={`relative px-4 py-2 text-xs font-semibold font-poppins whitespace-nowrap transition-all duration-200 ${
+                            statusFilter === tab.value
+                                ? "bg-primary-500 text-white shadow-sm"
+                                : "text-neutral-500 hover:text-neutral-700"
                         }`}
                     >
                         {tab.label}

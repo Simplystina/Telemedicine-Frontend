@@ -3,6 +3,7 @@ import {
     FiAlertTriangle, FiServer, FiGlobe,
     FiCalendar, FiCheckCircle, FiGrid
 } from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
 import { useAdminDashboard } from "@/features/admin/hooks/useAdmin";
 
 const colorMap: Record<string, { iconBg: string; text: string }> = {
@@ -14,12 +15,13 @@ const colorMap: Record<string, { iconBg: string; text: string }> = {
 
 function AdminDashboard() {
     const { data: stats, isLoading } = useAdminDashboard();
+    const navigate = useNavigate();
 
     const statCards = [
-        { label: "Total Users", value: stats?.users.total, icon: FiUsers, color: "blue" },
-        { label: "Verified Doctors", value: stats?.doctors.verified, icon: FiShield, color: "green" },
-        { label: "Pending Review", value: stats?.doctors.pending, icon: FiAlertTriangle, color: "amber" },
-        { label: "Specialties", value: stats?.specialties.total, icon: FiGrid, color: "primary" },
+        { label: "Total Users", value: stats?.users.total, icon: FiUsers, color: "blue", href: "/admin/patients" },
+        { label: "Verified Doctors", value: stats?.doctors.verified, icon: FiShield, color: "green", href: "/admin/doctors" },
+        { label: "Pending Review", value: stats?.doctors.pending, icon: FiAlertTriangle, color: "amber", href: "/admin/doctors?status=pending" },
+        { label: "Specialties", value: stats?.specialties.total, icon: FiGrid, color: "primary", href: "/admin/specialties" },
     ];
 
     return (
@@ -39,7 +41,11 @@ function AdminDashboard() {
                     const Icon = stat.icon;
                     const colors = colorMap[stat.color];
                     return (
-                        <div key={stat.label} className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-5 flex items-center space-x-4">
+                        <div
+                            key={stat.label}
+                            onClick={() => navigate(stat.href)}
+                            className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-5 flex items-center space-x-4 cursor-pointer hover:shadow-md hover:border-neutral-300 hover:-translate-y-0.5 transition-all duration-200"
+                        >
                             <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${colors.iconBg}`}>
                                 <Icon className={`w-6 h-6 ${colors.text}`} />
                             </div>

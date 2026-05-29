@@ -28,6 +28,7 @@ import PatientProfile from "@/features/patients/pages/PatientProfile";
 
 // Doctor Dashboard Imports
 import DoctorDashboardLayout from "@/features/doctor/components/DoctorDashboardLayout";
+import DoctorVerifiedRoute from "@/features/doctor/components/DoctorVerifiedRoute";
 import DoctorDashboardOverview from "@/features/doctor/pages/DoctorDashboardOverview";
 import DoctorAppointments from "@/features/doctor/pages/DoctorAppointments";
 import DoctorPatients from "@/features/doctor/pages/DoctorPatients";
@@ -114,18 +115,22 @@ function App() {
           <Route element={<ProtectedRoute allowedRoles={['doctor']} />}>
             <Route path="/doctor" element={<DoctorDashboardLayout />}>
               <Route index element={<DoctorDashboardOverview />} />
-              <Route path="appointments" element={<DoctorAppointments />} />
-              <Route path="patients" element={<DoctorPatients />} />
-              <Route path="patients/:patientId" element={<DoctorPatientDetail />} />
-              <Route path="messages" element={<DoctorMessages />} />
-              <Route path="availability" element={<DoctorAvailability />} />
-              <Route path="earnings" element={<DoctorEarnings />} />
               <Route path="profile" element={<DoctorProfile />} />
               <Route path="notifications" element={<DoctorNotifications />} />
-              <Route path="records" element={<DoctorPendingNotes />} />
-              <Route path="labs" element={<DoctorLabs />} />
+              <Route element={<DoctorVerifiedRoute />}>
+                <Route path="appointments" element={<DoctorAppointments />} />
+                <Route path="patients" element={<DoctorPatients />} />
+                <Route path="patients/:patientId" element={<DoctorPatientDetail />} />
+                <Route path="messages" element={<DoctorMessages />} />
+                <Route path="availability" element={<DoctorAvailability />} />
+                <Route path="earnings" element={<DoctorEarnings />} />
+                <Route path="records" element={<DoctorPendingNotes />} />
+                <Route path="labs" element={<DoctorLabs />} />
+              </Route>
             </Route>
-            <Route path="/doctor/call/:appointmentId" element={<CallInitializer />} />
+            <Route element={<DoctorVerifiedRoute />}>
+              <Route path="/doctor/call/:appointmentId" element={<CallInitializer />} />
+            </Route>
           </Route>
 
           {/* Admin Routes */}

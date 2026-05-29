@@ -1,5 +1,6 @@
 import { Link, NavLink } from "react-router-dom";
 import { useAuth } from "@/features/auth/hooks/useAuth";
+import { useMyDoctorProfile } from "@/features/doctor/hooks/useDoctors";
 import {
     FiHome,
     FiCalendar,
@@ -12,19 +13,20 @@ import {
     FiSettings,
     FiLogOut,
     FiClipboard,
-    FiActivity
+    FiActivity,
+    FiLock,
 } from "react-icons/fi";
 import Logo from "@assets/logo.png";
 
 const navItems = [
     { name: "Dashboard", path: "/doctor", icon: FiHome, end: true },
-    { name: "Appointments", path: "/doctor/appointments", icon: FiCalendar },
-    { name: "My Patients", path: "/doctor/patients", icon: FiUsers },
-    { name: "Clinical Records", path: "/doctor/records", icon: FiClipboard, badge: "3" },
-    { name: "Lab Results", path: "/doctor/labs", icon: FiActivity },
-    { name: "Messages", path: "/doctor/messages", icon: FiMessageSquare },
-    { name: "Availability", path: "/doctor/availability", icon: FiClock },
-    { name: "Earnings", path: "/doctor/earnings", icon: FiDollarSign },
+    { name: "Appointments", path: "/doctor/appointments", icon: FiCalendar, restricted: true },
+    { name: "My Patients", path: "/doctor/patients", icon: FiUsers, restricted: true },
+    { name: "Clinical Records", path: "/doctor/records", icon: FiClipboard, restricted: true },
+    { name: "Lab Results", path: "/doctor/labs", icon: FiActivity, restricted: true },
+    { name: "Messages", path: "/doctor/messages", icon: FiMessageSquare, restricted: true },
+    { name: "Availability", path: "/doctor/availability", icon: FiClock, restricted: true },
+    { name: "Earnings", path: "/doctor/earnings", icon: FiDollarSign, restricted: true },
     { name: "Notifications", path: "/doctor/notifications", icon: FiBell },
     { name: "My Profile", path: "/doctor/profile", icon: FiUser },
 ];
@@ -36,6 +38,8 @@ interface DoctorSidebarProps {
 
 function DoctorSidebar({ className = "hidden lg:flex sticky top-0", onClose }: DoctorSidebarProps) {
     const { logout } = useAuth();
+    const { data: profile } = useMyDoctorProfile();
+    const isLocked = profile?.status !== undefined && profile.status !== 'verified';
 
     return (
         <aside className={`w-64 h-full bg-white border-r border-neutral-200 flex-col shrink-0 ${className}`}>
@@ -83,6 +87,9 @@ function DoctorSidebar({ className = "hidden lg:flex sticky top-0", onClose }: D
                             >
                                 <Icon className="w-5 h-5 mr-3 shrink-0" />
                                 {item.name}
+                                {isLocked && item.restricted && (
+                                    <FiLock className="w-3 h-3 ml-auto text-neutral-400 shrink-0" />
+                                )}
                             </NavLink>
                         );
                     })}
@@ -108,3 +115,5 @@ function DoctorSidebar({ className = "hidden lg:flex sticky top-0", onClose }: D
 }
 
 export default DoctorSidebar;
+
+//0041171847
