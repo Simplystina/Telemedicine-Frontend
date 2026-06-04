@@ -22,28 +22,25 @@ const LandingPage = () => {
                     </div>
                 </div>
 
-                <div className="max-w-7xl mx-auto px-2 sm:px-3 lg:px-4">
+                <div id="how-it-works" className="max-w-7xl mx-auto px-2 sm:px-3 lg:px-4">
                     <HowItWorks />
                 </div>
-                <div >
+                <div id="services">
                     <Services />
                 </div>
-                <div className="max-w-7xl mx-auto px-2 sm:px-3 lg:px-4">
+                <div id="testimonials" className="max-w-7xl mx-auto px-2 sm:px-3 lg:px-4">
                     <Testimonial />
                 </div>
-                <div className="bg-primary-100">
+                <div id="plans" className="bg-primary-100">
                     <FlexiblePlan />
                 </div>
                 <div className="">
                     <GetStarted />
                 </div>
-                <div className="bg-neutral-100">
-
-                </div>
-                <div>
+                <div id="faq">
                     <FAQ />
                 </div>
-                <div>
+                <div id="contact">
                     <ContactUs />
                 </div>
             </main>

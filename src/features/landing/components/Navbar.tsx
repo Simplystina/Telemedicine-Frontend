@@ -7,12 +7,12 @@ const Navbar = () => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     const navLinks = [
-        { name: "How It Works", href: "/" },
-        { name: "Services", href: "/services" },
-        { name: "Testimonials", href: "/testimonials" },
-        { name: "Plans", href: "/plans" },
-        { name: "FAQ", href: "/faq" },
-        { name: "Contact", href: "/contact" },
+        { name: "How It Works", href: "#how-it-works" },
+        { name: "Services",     href: "#services" },
+        { name: "Testimonials", href: "#testimonials" },
+        { name: "Plans",        href: "#plans" },
+        { name: "FAQ",          href: "#faq" },
+        { name: "Contact",      href: "#contact" },
     ];
 
     return (
@@ -34,13 +34,13 @@ const Navbar = () => {
                     {/* Desktop Navigation */}
                     <div className="hidden md:flex items-center space-x-8">
                         {navLinks.map((link) => (
-                            <Link
+                            <a
                                 key={link.name}
-                                to={link.href}
+                                href={link.href}
                                 className="text-gray-700 hover:text-blue-600 transition-colors duration-200 font-medium"
                             >
                                 {link.name}
-                            </Link>
+                            </a>
                         ))}
                     </div>
 
@@ -107,14 +107,14 @@ const Navbar = () => {
             >
                 <div className="px-4 pt-2 pb-4 space-y-2 bg-white border-t border-gray-100">
                     {navLinks.map((link) => (
-                        <Link
+                        <a
                             key={link.name}
-                            to={link.href}
+                            href={link.href}
                             className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors duration-200"
                             onClick={() => setIsMobileMenuOpen(false)}
                         >
                             {link.name}
-                        </Link>
+                        </a>
                     ))}
                     <div className="pt-4 space-y-2 border-t border-gray-100">
                         <Link

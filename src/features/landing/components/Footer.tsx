@@ -1,12 +1,12 @@
 import Logo from "@assets/logo.png"
 function Footer() {
     const footerLinks = [
-        "About Us",
-        "Contact Us",
-        "Services",
-        "Privacy Policy",
-        "Terms of Service"
-    ]
+        { name: "About Us",          href: "/" },
+        { name: "Contact Us",        href: "/#contact" },
+        { name: "Services",          href: "/#services" },
+        { name: "Privacy Policy",    href: "/" },
+        { name: "Terms of Service",  href: "/" },
+    ];
     return (
         <footer className="bg-neutral-800 pb-16 pt-16">
             <div className="max-w-7xl mx-auto px-6">
@@ -24,9 +24,9 @@ function Footer() {
                             <h2 className="font-poppins text-2xl font-bold text-white">Dr. Malik Telemedicine</h2>
                         </div>
                         <div className="flex flex-wrap justify-center items-center gap-x-8 gap-y-4">
-                            {footerLinks.map((link, index) => (
-                                <a key={index} href="#" className="text-neutral-400 hover:text-white transition-colors font-medium">
-                                    {link}
+                            {footerLinks.map((link) => (
+                                <a key={link.name} href={link.href} className="text-neutral-400 hover:text-white transition-colors font-medium">
+                                    {link.name}
                                 </a>
                             ))}
                         </div>
