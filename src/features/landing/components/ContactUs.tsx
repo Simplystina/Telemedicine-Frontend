@@ -1,23 +1,4 @@
-import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
-import L from 'leaflet';
-
-// Fix for default marker icon in react-leaflet
-import icon from 'leaflet/dist/images/marker-icon.png';
-import iconShadow from 'leaflet/dist/images/marker-shadow.png';
-
-let DefaultIcon = L.icon({
-    iconUrl: icon,
-    shadowUrl: iconShadow,
-    iconSize: [25, 41],
-    iconAnchor: [12, 41]
-});
-
-L.Marker.prototype.options.icon = DefaultIcon;
-
 function ContactUs() {
-    // Kano, Nigeria coordinates
-    const kanoPosition: [number, number] = [12.0022, 8.5919];
-
     return (
         <div className="py-16 px-4 bg-neutral-100">
             <div className="max-w-7xl mx-auto">
@@ -33,7 +14,6 @@ function ContactUs() {
                             </p>
                         </div>
 
-                        {/* Contact Details */}
                         <div className="space-y-4 mt-8">
                             {/* Phone */}
                             <div className="flex items-center gap-4 p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200">
@@ -77,59 +57,50 @@ function ContactUs() {
                         </div>
                     </div>
 
-                    {/* Right Column - Interactive Map */}
-                    <div className="bg-white p-8 rounded-2xl shadow-lg">
-                        <h2 className="font-archivo text-xl md:text-2xl font-bold text-neutral-900 mb-4 text-center">
-                            Serving patients worldwide through telemedicine
-                        </h2>
-                        <p className="text-center text-neutral-600 font-inter mb-6">
-                            Our Headquarters in Kano, Nigeria
-                        </p>
-
-                        {/* Leaflet Map */}
-                        <div className="h-[500px] rounded-xl overflow-hidden border-2 border-primary-200">
-                            <MapContainer
-                                center={kanoPosition}
-                                zoom={13}
-                                scrollWheelZoom={false}
-                                style={{ height: '100%', width: '100%' }}
-                            >
-                                <TileLayer
-                                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                                />
-
-                                {/* Highlight circle around Kano */}
-                                <Circle
-                                    center={kanoPosition}
-                                    radius={2000}
-                                    pathOptions={{
-                                        color: '#636AE8',
-                                        fillColor: '#636AE8',
-                                        fillOpacity: 0.2
-                                    }}
-                                />
-
-                                {/* Marker at exact location */}
-                                <Marker position={kanoPosition}>
-                                    <Popup>
-                                        <div className="text-center p-2">
-                                            <h3 className="font-archivo font-bold text-lg text-neutral-900">Dr. Malik Telemedicine</h3>
-                                            <p className="font-inter text-sm text-neutral-600 mt-1">15 Aminu Kano Way</p>
-                                            <p className="font-inter text-sm text-neutral-600">Kano, Nigeria</p>
-                                        </div>
-                                    </Popup>
-                                </Marker>
-                            </MapContainer>
+                    {/* Right Column - Location Card */}
+                    <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+                        {/* Stylised location graphic */}
+                        <div className="relative bg-linear-to-br from-primary-100 to-primary-200 h-64 flex items-center justify-center">
+                            <div
+                                className="absolute inset-0 opacity-10"
+                                style={{
+                                    backgroundImage: 'linear-gradient(#636AE8 1px, transparent 1px), linear-gradient(90deg, #636AE8 1px, transparent 1px)',
+                                    backgroundSize: '40px 40px',
+                                }}
+                            />
+                            <div className="relative flex flex-col items-center">
+                                <div className="w-16 h-16 bg-primary-500 rounded-full flex items-center justify-center shadow-lg mb-3">
+                                    <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                                    </svg>
+                                </div>
+                                <div className="bg-white rounded-xl px-6 py-3 shadow-md text-center">
+                                    <p className="font-archivo font-bold text-neutral-900">Dr. Malik Telemedicine</p>
+                                    <p className="font-inter text-sm text-neutral-600">15 Aminu Kano Way, Kano</p>
+                                </div>
+                            </div>
                         </div>
 
-                        {/* Map Info */}
-                        <div className="mt-6 text-center">
-                            <p className="text-sm text-neutral-600 font-inter font-semibold">
-                                🌍 Global Telemedicine Service | 📍 Based in Kano, Nigeria
+                        <div className="p-6">
+                            <h2 className="font-archivo text-xl font-bold text-neutral-900 mb-2 text-center">
+                                Serving patients worldwide through telemedicine
+                            </h2>
+                            <p className="text-center text-neutral-600 font-inter text-sm mb-5">
+                                Our Headquarters in Kano, Nigeria
                             </p>
-                            <p className="text-xs text-neutral-500 font-inter mt-2">
-                                Click the marker for office details • We serve patients everywhere
+                            <a
+                                href="https://www.google.com/maps/search/15+Aminu+Kano+Way,+Kano,+Nigeria"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center justify-center gap-2 w-full py-3 bg-primary-50 hover:bg-primary-100 text-primary-700 font-semibold font-inter text-sm rounded-xl transition-colors"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                                View on Google Maps
+                            </a>
+                            <p className="text-xs text-center text-neutral-500 font-inter mt-3">
+                                🌍 Global Telemedicine Service · 📍 Based in Kano, Nigeria
                             </p>
                         </div>
                     </div>
