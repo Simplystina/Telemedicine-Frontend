@@ -135,17 +135,29 @@ function ForgotPasswordPage() {
                     </div>
                 )}
 
-                {/* Back to Login */}
+                {/* Back to Login / Sign Up */}
                 <div className="mt-6">
-                    <Link
-                        to="/auth/login"
-                        className="flex items-center justify-center font-inter text-sm font-semibold text-neutral-700 hover:text-neutral-900 transition-colors"
-                    >
-                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                        </svg>
-                        Back to Sign In
-                    </Link>
+                    {forgotPasswordError?.response?.data?.message?.toLowerCase().includes('no account found') ? (
+                        <Link
+                            to="/auth/register"
+                            className="flex items-center justify-center font-inter text-sm font-semibold text-primary-600 hover:text-primary-700 transition-colors"
+                        >
+                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                            </svg>
+                            Create an Account
+                        </Link>
+                    ) : (
+                        <Link
+                            to="/auth/login"
+                            className="flex items-center justify-center font-inter text-sm font-semibold text-neutral-700 hover:text-neutral-900 transition-colors"
+                        >
+                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                            </svg>
+                            Back to Sign In
+                        </Link>
+                    )}
                 </div>
             </div>
         </AuthLayout>

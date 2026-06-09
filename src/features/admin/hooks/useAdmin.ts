@@ -118,6 +118,18 @@ export const useActivateUser = () => {
     });
 };
 
+export const useSendPasswordReset = () => {
+    return useMutation({
+        mutationFn: (email: string) => authApi.forgotPassword(email),
+        onSuccess: () => {
+            toast.success('Password reset email sent successfully.');
+        },
+        onError: () => {
+            toast.error('Failed to send password reset email.');
+        },
+    });
+};
+
 // ── Appointments ──────────────────────────────────────────────────────────────
 
 export const useAdminAppointments = (params?: AdminAppointmentsQueryParams) => {

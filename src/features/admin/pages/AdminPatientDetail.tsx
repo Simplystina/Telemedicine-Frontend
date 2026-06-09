@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-    FiArrowLeft, FiMail, FiPhone, FiCalendar, FiUser,
+import { FiArrowLeft, FiMail, FiPhone, FiCalendar, FiUser,
     FiAlertTriangle, FiUserX, FiUserCheck, FiDroplet,
 } from "react-icons/fi";
-import { useAdminPatient, useDeactivateUser, useActivateUser } from "@/features/admin/hooks/useAdmin";
+import { useAdminPatient, useDeactivateUser, useActivateUser, useSendPasswordReset } from "@/features/admin/hooks/useAdmin";
 
 function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
     return (
@@ -28,6 +27,7 @@ function AdminPatientDetail() {
     const { data: patient, isLoading } = useAdminPatient(patientId ?? "");
     const { mutate: deactivate, isPending: isDeactivating } = useDeactivateUser();
     const { mutate: activate, isPending: isActivating } = useActivateUser();
+    const { mutate: sendPasswordReset, isPending: isSendingReset } = useSendPasswordReset();
 
     if (isLoading) {
         return (
@@ -180,6 +180,26 @@ function AdminPatientDetail() {
                                     </div>
                                 </button>
                             )}
+
+                            {/* Forgot Password */}
+                            <button
+                                onClick={() => {
+                                    const email = patient.user?.email;
+                                    if (email) sendPasswordReset(email);
+                                }}
+                                disabled={!patient.user?.email || isSendingReset}
+                                className="flex items-center space-x-3 p-4 rounded-xl border border-primary-200 bg-primary-50 hover:bg-primary-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed w-full text-left"
+                            >
+                                <FiMail className="w-5 h-5 text-primary-600 shrink-0" />
+                                <div>
+                                    <p className="text-sm font-semibold font-poppins text-primary-900">
+                                        {isSendingReset ? 'Sending…' : 'Send Password Reset Email'}
+                                    </p>
+                                    <p className="text-xs font-poppins text-primary-600">
+                                        Send a reset link to {patient.user?.email ?? 'this patient'}
+                                    </p>
+                                </div>
+                            </button>
                         </div>
                     </div>
                 </div>
