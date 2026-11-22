@@ -34,7 +34,7 @@ function VerifyEmailPage() {
                     <div className="inline-flex items-center justify-center mb-6">
                         {Logo && <img src={Logo} alt="Logo" className="w-16 h-16 drop-shadow-sm" />}
                         <h1 className="font-archivo text-2xl font-bold text-neutral-900 ml-3">
-                            Dr. Abdumalik
+                            Likita24
                         </h1>
                     </div>
                 </div>

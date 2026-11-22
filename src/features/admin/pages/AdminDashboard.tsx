@@ -31,7 +31,7 @@ function AdminDashboard() {
             <div>
                 <h1 className="text-2xl font-archivo font-bold text-neutral-900 mb-1">Platform Overview 📊</h1>
                 <p className="text-neutral-600 font-poppins text-sm">
-                    Real-time monitoring and administrative control for Dr. Malik Telemedicine.
+                    Real-time monitoring and administrative control for Likita24.
                 </p>
             </div>
 

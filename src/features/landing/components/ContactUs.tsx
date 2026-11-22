@@ -37,7 +37,7 @@ function ContactUs() {
                                 </div>
                                 <div>
                                     <p className="text-sm text-neutral-500 font-inter">Email</p>
-                                    <p className="font-semibold text-neutral-900 font-inter text-sm sm:text-base md:text-lg break-all">support@drmaliktelemedicine.ng</p>
+                                    <p className="font-semibold text-neutral-900 font-inter text-sm sm:text-base md:text-lg break-all">support@likita24.com</p>
                                 </div>
                             </div>
 
@@ -75,7 +75,7 @@ function ContactUs() {
                                     </svg>
                                 </div>
                                 <div className="bg-white rounded-xl px-6 py-3 shadow-md text-center">
-                                    <p className="font-archivo font-bold text-neutral-900">Dr. Malik Telemedicine</p>
+                                    <p className="font-archivo font-bold text-neutral-900">Likita24</p>
                                     <p className="font-inter text-sm text-neutral-600">15 Aminu Kano Way, Kano</p>
                                 </div>
                             </div>

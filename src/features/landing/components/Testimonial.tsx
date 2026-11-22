@@ -12,7 +12,7 @@ function Testimonial() {
             image: image,
             name: "Aisha Lawal",
             location: "Kano, Nigeria",
-            testimonial: "Dr. Malik ` made it so easy to get a prescription. Quick, professional, and no need to leave my home."
+            testimonial: "Likita24 made it so easy to get a prescription. Quick, professional, and no need to leave my home."
         },
         {
             image: image,

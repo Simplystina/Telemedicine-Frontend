@@ -10,7 +10,7 @@ function Header() {
                     Reduce Unnecessary Hospital Visits
                 </h1>
                 <p className='font-inter text-base font-normal text-neutral-500 mt-5 max-w-lg lg:w-[508px] leading-[29px]'>
-                    Get expert medical advice from the comfort of your home with Dr. Malik Telemedicine. Skip the waiting rooms and connect with qualified healthcare professionals instantly.
+                    Get expert medical advice from the comfort of your home with Likita24. Skip the waiting rooms and connect with qualified healthcare professionals instantly.
                 </p>
                 <div className='pt-5 pb-10'>
                     <SignUpButton className='px-10'>

@@ -30,7 +30,7 @@ function AdminSidebar({ className = "hidden lg:flex sticky top-0", onClose }: { 
                 <div className="flex items-center space-x-2">
                     <img src={Logo} alt="logo" className="h-10 w-auto mix-blend-multiply" />
                     <span className="text-xs md:text-sm leading-tight font-semibold font-archivo text-primary-500">
-                        Dr. Malik Telemedicine
+                        Likita24
                     </span>
                 </div>
             </div>

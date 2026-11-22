@@ -52,9 +52,9 @@ function ResetPasswordPage() {
             {/* Logo and Header */}
             <div className="text-center mb-8">
                 <div className="flex justify-center items-center mb-6">
-                    <img src={Logo} alt="Dr. Abdumalik Telemedicine" className="w-16 h-16" />
+                    <img src={Logo} alt="Likita24" className="w-16 h-16" />
                     <h1 className="font-archivo text-2xl font-bold text-neutral-900 ml-3">
-                        Dr. Abdumalik
+                        Likita24
                     </h1>
                 </div>
                 <h2 className="font-archivo text-3xl font-bold text-neutral-900 mb-2">

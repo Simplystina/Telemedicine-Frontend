@@ -21,7 +21,7 @@ function Footer() {
                                 height="48"
                                 className="w-12 h-12 brightness-0 invert" 
                             />
-                            <h2 className="font-poppins text-2xl font-bold text-white">Dr. Malik Telemedicine</h2>
+                            <h2 className="font-poppins text-2xl font-bold text-white">Likita24</h2>
                         </div>
                         <div className="flex flex-wrap justify-center items-center gap-x-8 gap-y-4">
                             {footerLinks.map((link) => (
@@ -33,7 +33,7 @@ function Footer() {
                     </div>
                     <div className="pt-8 border-t border-neutral-700 text-center">
                         <p className="text-neutral-500 text-sm">
-                            &copy; {new Date().getFullYear()} Dr. Malik Telemedicine. All rights reserved.
+                            &copy; {new Date().getFullYear()} Likita24. All rights reserved.
                         </p>
                     </div>
                 </div>

@@ -26,7 +26,7 @@ const Navbar = () => {
                                 <img src={logo} alt="logo" width="40" height="40" className="w-10 h-10" />
                             </div>
                             <span className="text-xl leading-5 font-bold font-archivo text-primary-500">
-                                Dr. Malik Telemedicine
+                                Likita24
                             </span>
                         </Link>
                     </div>

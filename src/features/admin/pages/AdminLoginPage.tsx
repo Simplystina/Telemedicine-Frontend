@@ -36,7 +36,7 @@ function AdminLoginPage() {
                     <div className="flex items-center justify-center space-x-2 mb-6">
                         <img src={Logo} alt="logo" className="h-12 w-auto mix-blend-multiply" />
                         <span className="text-lg font-semibold font-archivo text-primary-500">
-                            Dr. Malik Telemedicine
+                            Likita24
                         </span>
                     </div>
                     <h2 className="font-archivo text-3xl font-bold text-neutral-900 mb-2">
@@ -68,7 +68,7 @@ function AdminLoginPage() {
                             </label>
                             <input
                                 type="email"
-                                placeholder="admin@drmalik.com"
+                                placeholder="admin@likita24.com"
                                 {...register("email", { required: "Email is required" })}
                                 className={`w-full border rounded-lg px-4 py-3 text-sm font-poppins text-neutral-900 placeholder:text-neutral-400 outline-none transition-all ${
                                     errors.email

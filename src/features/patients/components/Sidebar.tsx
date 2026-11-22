@@ -41,7 +41,7 @@ function Sidebar({ className = "hidden lg:flex sticky top-0", onClose }: Sidebar
                         <img src={Logo} alt="logo" className="h-10 w-auto mix-blend-multiply" />
                     </div>
                     <span className="text-xs md:text-sm leading-2 font-semibold font-archivo text-primary-500">
-                        Dr. Malik Telemedicine
+                        Likita24
                     </span>
                 </Link>
             </div>

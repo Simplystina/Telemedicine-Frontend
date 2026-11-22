@@ -8,6 +8,8 @@ import { useCallStore } from "@/features/consultations/store/useCallStore";
 
 import LandingPage from "@/features/landing/pages/LandingPage";
 import ProtectedRoute from "@/features/auth/components/ProtectedRoute";
+import InstallPrompt from "@shared/components/InstallPrompt";
+import OfflineBanner from "@shared/components/OfflineBanner";
 
 // Auth pages
 const Login               = lazy(() => import("@/features/auth/pages/LoginPage"));
@@ -94,6 +96,8 @@ function App() {
       <BrowserRouter>
         <SocketProvider>
           <Toaster position="top-right" />
+          <OfflineBanner />
+          {!isActive && <InstallPrompt />}
 
           {/* Global Video Call Overlay */}
           {isActive && activeCallId && (
