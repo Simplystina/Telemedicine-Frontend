@@ -1,28 +1,36 @@
 import { MdOutlinePersonAddAlt1 } from "react-icons/md"
 import { IoMdCheckmarkCircleOutline } from "react-icons/io"
 import SignUpButton from "@/shared/components/SignUpBotton"
+import { Section } from "./Section"
+
+const steps = [
+    { icon: MdOutlinePersonAddAlt1, label: "1. Register & Verify" },
+    { icon: IoMdCheckmarkCircleOutline, label: "2. Book Your Consultation" },
+]
 
 const GetStarted = () => {
     return (
-        <div className='w-full py-20 lg:py-32 bg-neutral-100 flex flex-col items-center justify-center px-4'>
-            <h1 className="font-archivo text-2xl md:text-3xl lg:text-4xl leading-tight font-bold text-neutral-900 text-center">Ready to Get Started?</h1>
-            <p className='font-inter text-lg leading-7 font-normal text-neutral-500 py-10 text-center max-w-xl'>Begin your journey to convenient healthcare in just a few simple steps.</p>
-            <div className="flex flex-col sm:flex-row justify-center items-center gap-10 lg:gap-20">
-                <div className="gap-4 flex flex-col items-center">
-                    <MdOutlinePersonAddAlt1 className="text-secondary-500 font-bold w-12 h-12 lg:w-16 lg:h-16" />
-                    <p className="font-archivo text-xl leading-7 font-semibold text-neutral-900">1. Register & Verify</p>
+        <Section className="bg-neutral-100">
+            <div className="rounded-2xl bg-white p-5 text-center shadow-[0px_0px_2px_rgba(23,26,31,0.12),0px_2px_5px_rgba(23,26,31,0.09)] sm:p-8 lg:p-10">
+                <h2 className="font-archivo text-2xl font-bold leading-tight text-neutral-900 sm:text-3xl lg:text-4xl">Ready to Get Started?</h2>
+                <p className="mx-auto mt-2 max-w-2xl font-inter text-sm leading-relaxed text-neutral-500 sm:text-base">
+                    Begin your journey to convenient healthcare in just a few simple steps.
+                </p>
+                <div className="mt-5 grid grid-cols-1 gap-3 sm:mt-6 sm:grid-cols-2 sm:gap-4 lg:mx-auto lg:max-w-2xl">
+                    {steps.map(({ icon: Icon, label }) => (
+                        <div key={label} className="flex items-center justify-center gap-3 rounded-xl bg-primary-50 p-3">
+                            <Icon className="h-8 w-8 shrink-0 text-secondary-500" aria-hidden="true" />
+                            <p className="font-archivo text-base font-semibold leading-tight text-neutral-900">{label}</p>
+                        </div>
+                    ))}
                 </div>
-                <div className="gap-4 flex flex-col items-center">
-                    <IoMdCheckmarkCircleOutline className="text-secondary-500 font-bold w-12 h-12 lg:w-16 lg:h-16" />
-                    <p className="font-archivo text-xl leading-7 font-semibold text-neutral-900">2. Book Your Consultation</p>
+                <div className="mt-5 flex justify-center sm:mt-6">
+                    <SignUpButton className="w-full sm:w-auto sm:px-10">
+                        Get Started Now
+                    </SignUpButton>
                 </div>
             </div>
-            <div className="pt-12">
-                <SignUpButton className="px-15">
-                    Get Started Now
-                </SignUpButton>
-            </div>
-        </div>
+        </Section>
     )
 }
 

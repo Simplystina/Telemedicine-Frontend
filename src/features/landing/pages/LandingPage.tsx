@@ -16,33 +16,14 @@ const LandingPage = () => {
 
             {/* Main Content - Add padding top to account for fixed navbar */}
             <main className="pt-0 flex-1">
-                <div className="bg-primary-100">
-                    <div className="max-w-7xl mx-auto px-2 sm:px-3 lg:px-4">
-                        <Header />
-                    </div>
-                </div>
-
-                <div id="how-it-works" className="max-w-7xl mx-auto px-2 sm:px-3 lg:px-4">
-                    <HowItWorks />
-                </div>
-                <div id="services">
-                    <Services />
-                </div>
-                <div id="testimonials" className="max-w-7xl mx-auto px-2 sm:px-3 lg:px-4">
-                    <Testimonial />
-                </div>
-                <div id="plans" className="bg-primary-100">
-                    <FlexiblePlan />
-                </div>
-                <div className="">
-                    <GetStarted />
-                </div>
-                <div id="faq">
-                    <FAQ />
-                </div>
-                <div id="contact">
-                    <ContactUs />
-                </div>
+                <Header />
+                <HowItWorks />
+                <Services />
+                <Testimonial />
+                <FlexiblePlan />
+                <GetStarted />
+                <FAQ />
+                <ContactUs />
             </main>
 
             {/* Footer - Will stick to bottom on short pages, scroll normally on long pages */}

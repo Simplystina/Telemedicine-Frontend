@@ -1,4 +1,5 @@
 import Card from './Card'
+import { Section, SectionHeading } from './Section'
 import BrowseDoctorsIcon from "@assets/browseDoctorsIcon.png"
 import BookAppointmentIcon from "@assets/BookAppointementIcon.webp"
 import ConsultOnlineIcon from "@assets/ConsultOnlineIcon.png"
@@ -28,19 +29,17 @@ function HowItWorks() {
         }
     ]
     return (
-        <div className='py-20 lg:py-32 px-4'>
-            <h1 className='font-archivo text-2xl md:text-3xl lg:text-[36px] font-bold text-neutral-900 leading-tight text-center'>How it works</h1>
-            <p className='font-inter text-base font-normal max-w-2xl mx-auto text-neutral-500 leading-normal mt-5 text-center'>
-                Get expert medical advice from the comfort of your home with Likita24. Skip the waiting rooms and connect with qualified healthcare professionals instantly.
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 lg:gap-10 pt-16">
+        <Section id="how-it-works">
+            <SectionHeading
+                title="How it works"
+                description="Get expert medical advice from the comfort of your home with Likita24. Skip the waiting rooms and connect with qualified healthcare professionals instantly."
+            />
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 lg:gap-6">
                 {cardItems.map((item, index) => (
-                    <div key={index} className="flex items-center justify-center">
-                        <Card browseDoctors={item.icon} heading={item.heading} text={item.text} />
-                    </div>
+                    <Card key={item.heading} browseDoctors={item.icon} heading={item.heading} text={item.text} step={index + 1} />
                 ))}
             </div>
-        </div>
+        </Section>
     )
 }
 

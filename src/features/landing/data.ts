@@ -7,7 +7,7 @@ export const faqData: FAQItem[] = [
     },
     {
         question: "What are the consultation fees?",
-        answer: "Consultation fees vary depending on the doctor's specialty and experience. You can view the fees on each doctor's profile page before booking. We accept various payment methods including credit cards, debit cards, and digital wallets."
+        answer: "Likita24 is ₦1,000 per month and includes the benefits listed in our plan."
     },
     {
         question: "Can I get a prescription online?",

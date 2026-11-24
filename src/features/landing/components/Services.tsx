@@ -1,52 +1,55 @@
+import type { IconType } from "react-icons"
+import { FaBaby, FaBrain, FaEye, FaFemale, FaHeartbeat, FaMicroscope, FaTint, FaUserMd, FaVial } from "react-icons/fa"
 import ServicesImg from "@assets/ServicesImage.webp"
+import { Section, SectionHeading } from "./Section"
+
+const services: { name: string; icon: IconType }[] = [
+    { name: "General practitioner", icon: FaUserMd },
+    { name: "Psychiatrist", icon: FaBrain },
+    { name: "Gynaecologist", icon: FaFemale },
+    { name: "Paediatrician", icon: FaBaby },
+    { name: "Dermatology", icon: FaMicroscope },
+    { name: "Cardiologist", icon: FaHeartbeat },
+    { name: "Endocrinologist", icon: FaVial },
+    { name: "Urologist", icon: FaTint },
+    { name: "Ophthalmologist", icon: FaEye },
+]
 
 function Services() {
-
-    const services = [
-        "General practitioner",
-        "Psychiatrist",
-        "Gynaecologist",
-        "Pedeatrician",
-        "Gyneacology",
-        "Dermatology",
-        "Cardiologist",
-        "Endocrinologist",
-        "Urologist",
-        "Ophthalmologist",
-        ""
-
-    ]
     return (
-        <div className="bg-neutral-100 flex flex-col lg:flex-row items-center justify-center gap-10 lg:gap-16 py-16 lg:py-24 px-4 overflow-hidden">
-            <div className="w-full max-w-lg lg:w-1/2 flex justify-center lg:justify-end">
+        <Section id="services" className="overflow-hidden bg-neutral-100" containerClassName="flex flex-col items-center gap-6 lg:flex-row lg:gap-12">
+            <div className="flex w-full max-w-xs justify-center sm:max-w-sm lg:w-5/12 lg:max-w-none lg:justify-start">
                 <img
                     src={ServicesImg}
                     alt="services image"
                     loading="lazy"
                     width={448}
                     height={448}
-                    className="w-full h-auto max-w-md lg:max-w-none"
+                    className="h-auto w-full max-w-md"
                 />
             </div>
-            <div className="w-full lg:w-1/2 flex flex-col items-center lg:items-start text-center lg:text-left">
-                <h1 className="font-archivo text-2xl md:text-3xl lg:text-4xl leading-tight font-bold text-neutral-900">Our Services & Specialities</h1>
-                <p className="pb-8 pt-6 max-w-xl font-inter text-lg leading-7 font-normal text-neutral-500">Connecting you with highly qualified medical professionals across various fields. Experience expert care from the comfort of your home.</p>
-                <div className="flex flex-wrap justify-center lg:justify-start gap-3 mt-2 max-w-xl">
-                    {
-                        services.filter(item => item.trim() !== "").map((item, index) => {
-                            return (
-                                <span
-                                    key={index}
-                                    className="inline-flex h-[42px] px-5 items-center justify-center rounded-full bg-white border border-gray-200 font-inter text-base leading-[26px] font-medium shadow-sm transition-all hover:bg-primary-500 hover:text-white hover:border-primary-500 active:scale-95 cursor-pointer"
-                                >
-                                    {item}
-                                </span>
-                            )
-                        })
-                    }
-                </div>
+            <div className="w-full lg:w-7/12">
+                <SectionHeading
+                    align="left"
+                    title="Our Services & Specialities"
+                    description="Specialists across every field, available online."
+                    className="mb-5 lg:mb-6"
+                />
+                <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:gap-4">
+                    {services.map(({ name, icon: Icon }) => (
+                        <li
+                            key={name}
+                            className="flex min-h-11 items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2.5 shadow-sm transition-colors hover:border-primary-500 hover:bg-primary-50"
+                        >
+                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-500">
+                                <Icon className="h-4 w-4" aria-hidden="true" />
+                            </span>
+                            <span className="font-inter text-sm font-medium leading-tight text-neutral-900">{name}</span>
+                        </li>
+                    ))}
+                </ul>
             </div>
-        </div>
+        </Section>
     )
 }
 
