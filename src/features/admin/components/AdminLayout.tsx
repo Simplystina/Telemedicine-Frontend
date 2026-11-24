@@ -7,6 +7,7 @@ import {
     FiBell, FiMenu, FiLogOut, FiCalendar,
 } from "react-icons/fi";
 import Logo from "@assets/logo.png";
+import { ADMIN_LOGIN_PATH } from "@/features/admin/config";
 
 const navItems = [
     { name: "Overview", path: "/admin/dashboard", icon: FiHome, end: true },
@@ -78,7 +79,7 @@ function AdminSidebar({ className = "hidden lg:flex sticky top-0", onClose }: { 
             {/* Bottom Actions */}
             <div className="p-4 border-t border-neutral-200 space-y-1 shrink-0">
                 <button
-                    onClick={() => logout('/admin-login')}
+                    onClick={() => logout(ADMIN_LOGIN_PATH)}
                     className="w-full flex items-center px-3 py-2.5 rounded-lg font-poppins text-xs md:text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
                 >
                     <FiLogOut className="w-5 h-5 mr-3 shrink-0" />

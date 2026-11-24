@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
+import { isAdminPath } from "@/features/admin/config";
 import { IoClose, IoShareOutline } from "react-icons/io5";
 import { FiPlusSquare } from "react-icons/fi";
 
@@ -102,7 +103,7 @@ export default function InstallPrompt() {
   };
 
   // The installable app is for patients and doctors; never offer it on admin pages.
-  const isAdminPage = /^\/admin(\/|-login|$)/.test(pathname);
+  const isAdminPage = isAdminPath(pathname);
   if (!visible || isAdminPage) return null;
 
   return (

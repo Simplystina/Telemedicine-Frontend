@@ -10,6 +10,8 @@ import LandingPage from "@/features/landing/pages/LandingPage";
 import ProtectedRoute from "@/features/auth/components/ProtectedRoute";
 import InstallPrompt from "@shared/components/InstallPrompt";
 import OfflineBanner from "@shared/components/OfflineBanner";
+import NotFoundPage from "@shared/components/NotFoundPage";
+import { ADMIN_LOGIN_PATH } from "@/features/admin/config";
 
 // Auth pages
 const Login               = lazy(() => import("@/features/auth/pages/LoginPage"));
@@ -116,7 +118,7 @@ function App() {
               <Route path="reset-password" element={<ResetPassword />} />
               <Route path="auth/resend-verification" element={<ResendVerification />} />
               <Route path="verify-email" element={<VerifyEmail />} />
-              <Route path="admin-login" element={<AdminLoginPage />} />
+              <Route path={ADMIN_LOGIN_PATH} element={<AdminLoginPage />} />
 
               {/* Patient Routes */}
               <Route element={<ProtectedRoute allowedRoles={['patient']} />}>
@@ -156,7 +158,7 @@ function App() {
               </Route>
 
               {/* Admin Routes */}
-              <Route element={<ProtectedRoute allowedRoles={['admin']} redirectTo="/admin-login" />}>
+              <Route element={<ProtectedRoute allowedRoles={['admin']} hideWhenDenied />}>
                 <Route path="/admin" element={<AdminLayout />}>
                   <Route index element={<AdminDashboard />} />
                   <Route path="dashboard" element={<AdminDashboard />} />
@@ -170,6 +172,9 @@ function App() {
                   <Route path="health" element={<div className="p-6 bg-white rounded-2xl border border-neutral-200 shadow-sm"><h1 className="text-2xl font-archivo font-bold text-neutral-900 mb-1">Platform Health</h1><p className="text-neutral-600 font-poppins text-sm">Real-time infrastructure monitoring.</p></div>} />
                 </Route>
               </Route>
+
+              {/* Anything else */}
+              <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </Suspense>
         </SocketProvider>

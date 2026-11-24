@@ -1,43 +1,34 @@
 import type { ReactNode } from 'react';
-import AuthPatientImage from '@assets/AuthPatientImage.webp';
+import { Link } from 'react-router-dom';
+import Logo from '@assets/logo.png';
+import AuthShowcase from './AuthShowcase';
+
 interface AuthLayoutProps {
     children: ReactNode;
 }
 
+/**
+ * Shared shell for every auth screen.
+ * - lg and up: two equal columns. Left = brand panel (photo fills it, 16px inset on all sides);
+ *   right = form centred in its half.
+ * - below lg: brand panel is not rendered visually; one centred form column with a compact logo on top.
+ */
 function AuthLayout({ children }: AuthLayoutProps) {
     return (
-        <div className="h-screen w-full flex overflow-hidden bg-white">
-            {/* Left Side: Image (Visible on lg screens) */}
-            <div className="hidden lg:block lg:w-1/2 relative h-full overflow-hidden">
-                <div className="absolute inset-0 bg-primary-600/10 z-10"></div> {/* Soft overlay */}
-                <img
-                    src={AuthPatientImage}
-                    alt="Healthcare Professional"
-                    loading="lazy"
-                    width={800}
-                    height={1200}
-                    className="w-full h-full object-cover animate-fade-in-up"
-                    style={{ animationDuration: '1s' }}
-                />
+        <div className="grid min-h-dvh w-full grid-cols-1 bg-white lg:grid-cols-2">
+            <AuthShowcase />
 
-                {/* Decorative floating elements on top of image */}
-                <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-primary-400/30 rounded-full blur-3xl animate-pulse z-20"></div>
-                <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-secondary-500/20 rounded-full blur-3xl animate-pulse delay-1000 z-20"></div>
+            <main className="flex items-center justify-center px-5 py-8 lg:px-12 lg:py-10">
+                <div className="w-full max-w-md space-y-6 animate-fade-in-up">
+                    {/* Brand for small screens (the brand panel is hidden there) */}
+                    <Link to="/" className="flex w-fit items-center gap-2.5 lg:hidden" aria-label="Likita24 home">
+                        <img src={Logo} alt="" className="h-9 w-9" />
+                        <span className="font-archivo text-lg font-bold tracking-tight text-neutral-900">Likita24</span>
+                    </Link>
 
-                {/* Branding on image side if needed, or just keep it clean */}
-                <div className="absolute bottom-12 left-12 z-30">
-                    <h3 className="text-white text-3xl font-archivo font-bold drop-shadow-lg">
-                        Quality Healthcare<br />at Your Fingertips
-                    </h3>
-                </div>
-            </div>
-
-            {/* Right Side: Form Content */}
-            <div className="w-full lg:w-1/2 flex flex-col overflow-y-auto bg-linear-to-br from-primary-50 via-white to-primary-100 px-4 py-8 lg:px-6 ">
-                <div className="w-full  animate-fade-in-up">
                     {children}
                 </div>
-            </div>
+            </main>
         </div>
     );
 }

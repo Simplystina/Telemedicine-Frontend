@@ -1,33 +1,43 @@
-import { type InputHTMLAttributes, forwardRef } from 'react';
+import { type InputHTMLAttributes, type ReactNode, forwardRef } from 'react';
 
 interface FormInputProps extends InputHTMLAttributes<HTMLInputElement> {
     label: string;
     error?: string;
     helperText?: string;
+    /** Optional icon shown inside the field, on the left. */
+    icon?: ReactNode;
 }
 
 const FormInput = forwardRef<HTMLInputElement, FormInputProps>(
-    ({ label, error, helperText, className = '', ...props }, ref) => {
+    ({ label, error, helperText, icon, className = '', ...props }, ref) => {
         return (
             <div className="w-full">
                 <label
                     htmlFor={props.id}
-                    className="block font-poppins text-sm font-semibold text-neutral-600 mb-2"
+                    className="block font-poppins text-sm font-medium text-neutral-700 mb-1.5"
                 >
                     {label}
                 </label>
-                <input
-                    ref={ref}
-                    className={`w-full px-4 py-3 border ${error ? 'border-red-500' : 'border-neutral-300'
-                        } rounded-lg font-inter text-base text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 ${error ? 'focus:ring-red-500' : 'focus:ring-primary-500'
-                        } focus:border-transparent transition-all ${className}`}
-                    {...props}
-                />
+                <div className="relative">
+                    {icon && (
+                        <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" aria-hidden="true">
+                            {icon}
+                        </span>
+                    )}
+                    <input
+                        ref={ref}
+                        aria-invalid={error ? true : undefined}
+                        className={`w-full h-12 ${icon ? 'pl-11 pr-4' : 'px-4'} bg-white border ${error ? 'border-red-500' : 'border-neutral-200 hover:border-neutral-300'
+                            } rounded-xl font-inter text-base text-neutral-900 placeholder-neutral-400 shadow-xs focus:outline-none focus:ring-4 ${error ? 'focus:ring-red-500/15' : 'focus:border-primary-500 focus:ring-primary-500/15'
+                            } transition-all ${className}`}
+                        {...props}
+                    />
+                </div>
                 {error && (
-                    <p className="mt-1 text-sm text-red-600 font-inter">{error}</p>
+                    <p className="mt-1.5 text-sm text-red-600 font-inter">{error}</p>
                 )}
                 {helperText && !error && (
-                    <p className="mt-1 text-xs text-neutral-500 font-inter">{helperText}</p>
+                    <p className="mt-1.5 text-xs text-neutral-500 font-inter">{helperText}</p>
                 )}
             </div>
         );

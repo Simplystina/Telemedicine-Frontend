@@ -14,8 +14,8 @@ export const useAuth = () => {
         mutationFn: (credentials: LoginCredentials) => authApi.login(credentials),
         onSuccess: (data) => {
             if (data.user.role === 'admin') {
-                toast.error('Admin accounts must sign in via the Admin Portal.');
-                navigate('/admin-login');
+                // Don't reveal that an admin portal exists (or where): behave like a failed login.
+                toast.error('Invalid email or password.');
                 return;
             }
             setUser({ ...data.user, token: data.accessToken } as AuthUser);

@@ -51,6 +51,10 @@ export default defineConfig(({ mode }) => ({
         // Only the app shell (JS/CSS/HTML/icons) is cached. API calls, sockets and
         // video traffic always go to the network so patient data is never stale.
         globPatterns: ['**/*.{js,css,html,svg,png,webp,ico,woff2}'],
+        // Admin pages are for staff only; don't make every patient's phone download
+        // them in the background. They load from the network when an admin opens them.
+        // (Matches the Admin* page chunks and the useAdmin hook chunk.)
+        globIgnores: ['**/Admin*.js', '**/useAdmin-*.js'],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api/, /^\/socket\.io/],

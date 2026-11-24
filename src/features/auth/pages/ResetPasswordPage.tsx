@@ -2,11 +2,15 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useSearchParams, Navigate } from 'react-router-dom';
-import Logo from '@assets/logo.png';
+import { FiArrowLeft, FiCheck, FiLock } from 'react-icons/fi';
 import { resetPasswordSchema, type ResetPasswordFormData } from '../validation/schemas';
 import PasswordInput from '../components/PasswordInput';
 import { useAuth } from '../hooks/useAuth';
 import AuthLayout from '../components/AuthLayout';
+import AuthHeader from '../components/AuthHeader';
+import AuthButton from '../components/AuthButton';
+import { AuthAlert, AuthStatusIcon } from '../components/AuthStatus';
+import { authPrimaryButton } from '../components/authStyles';
 
 function ResetPasswordPage() {
     const [searchParams] = useSearchParams();
@@ -30,9 +34,11 @@ function ResetPasswordPage() {
     const password = watch('password');
 
     // Password strength indicators
-    const hasMinLength = password?.length >= 8;
-    const hasUpperCase = /[A-Z]/.test(password || '');
-    const hasNumber = /[0-9]/.test(password || '');
+    const requirements = [
+        { label: 'At least 8 characters', met: password?.length >= 8 },
+        { label: 'One uppercase letter', met: /[A-Z]/.test(password || '') },
+        { label: 'One number', met: /[0-9]/.test(password || '') },
+    ];
 
     if (!token) {
         return <Navigate to="/auth/forgot-password" replace />;
@@ -49,143 +55,79 @@ function ResetPasswordPage() {
 
     return (
         <AuthLayout>
-            {/* Logo and Header */}
-            <div className="text-center mb-8">
-                <div className="flex justify-center items-center mb-6">
-                    <img src={Logo} alt="Likita24" className="w-16 h-16" />
-                    <h1 className="font-archivo text-2xl font-bold text-neutral-900 ml-3">
-                        Likita24
-                    </h1>
-                </div>
-                <h2 className="font-archivo text-3xl font-bold text-neutral-900 mb-2">
-                    Reset Password
-                </h2>
-                <p className="font-inter text-base text-neutral-600">
-                    {isSubmitted
-                        ? "Your password has been reset successfully"
-                        : "Enter your new password below"
-                    }
-                </p>
-            </div>
+            {!isSubmitted ? (
+                <>
+                    <AuthHeader title="Reset password" subtitle="Choose a new password for your account." />
 
-            {/* Reset Password Form */}
-            <div className="bg-white rounded-2xl shadow-xl p-8">
-                {!isSubmitted ? (
-                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
                         {resetPasswordError && (
-                            <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
-                                <p className="font-poppins text-sm text-red-600 font-medium">
-                                    {resetPasswordError.response?.data?.message || resetPasswordError.message || 'Something went wrong. Please try again.'}
-                                </p>
-                            </div>
+                            <AuthAlert>
+                                {resetPasswordError.response?.data?.message || resetPasswordError.message || 'Something went wrong. Please try again.'}
+                            </AuthAlert>
                         )}
 
-                        {/* New Password Input */}
                         <PasswordInput
-                            label="New Password"
+                            label="New password"
                             id="password"
+                            autoComplete="new-password"
                             placeholder="Enter new password"
+                            icon={<FiLock className="h-5 w-5" />}
                             error={errors.password?.message}
-                            helperText="Must be at least 8 characters"
                             {...register('password')}
                         />
 
-                        {/* Confirm Password Input */}
                         <PasswordInput
-                            label="Confirm New Password"
+                            label="Confirm new password"
                             id="confirmPassword"
+                            autoComplete="new-password"
                             placeholder="Confirm new password"
+                            icon={<FiLock className="h-5 w-5" />}
                             error={errors.confirmPassword?.message}
                             {...register('confirmPassword')}
                         />
 
-                        {/* Password Requirements */}
-                        <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-4">
-                            <p className="font-inter text-xs font-semibold text-neutral-900 mb-2">
-                                Password must contain:
-                            </p>
-                            <ul className="space-y-1">
-                                <li className={`flex items-center font-inter text-xs ${hasMinLength ? 'text-green-600' : 'text-neutral-600'}`}>
-                                    <svg className={`w-4 h-4 mr-2 ${hasMinLength ? 'text-green-600' : 'text-neutral-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                    </svg>
-                                    At least 8 characters
-                                </li>
-                                <li className={`flex items-center font-inter text-xs ${hasUpperCase ? 'text-green-600' : 'text-neutral-600'}`}>
-                                    <svg className={`w-4 h-4 mr-2 ${hasUpperCase ? 'text-green-600' : 'text-neutral-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                    </svg>
-                                    One uppercase letter
-                                </li>
-                                <li className={`flex items-center font-inter text-xs ${hasNumber ? 'text-green-600' : 'text-neutral-600'}`}>
-                                    <svg className={`w-4 h-4 mr-2 ${hasNumber ? 'text-green-600' : 'text-neutral-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                    </svg>
-                                    One number
-                                </li>
+                        {/* Password requirements */}
+                        <div className="rounded-xl border border-neutral-200 bg-neutral-100 p-4">
+                            <p className="mb-2 font-poppins text-xs font-semibold text-neutral-900">Password must contain:</p>
+                            <ul className="space-y-1.5">
+                                {requirements.map(({ label, met }) => (
+                                    <li key={label} className={`flex items-center gap-2 font-poppins text-xs ${met ? 'text-green-600' : 'text-neutral-500'}`}>
+                                        <FiCheck className={`h-4 w-4 ${met ? 'text-green-600' : 'text-neutral-400'}`} aria-hidden="true" />
+                                        {label}
+                                    </li>
+                                ))}
                             </ul>
                         </div>
 
-                        {/* Submit Button */}
-                        <button
-                            type="submit"
-                            disabled={isResettingPassword}
-                            className="w-full bg-primary-500 hover:bg-primary-600 disabled:bg-primary-300 disabled:cursor-not-allowed text-white font-inter text-base font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg active:scale-95 disabled:active:scale-100"
-                        >
-                            {isResettingPassword ? (
-                                <span className="flex items-center justify-center">
-                                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                    Resetting password...
-                                </span>
-                            ) : (
-                                'Reset Password'
-                            )}
-                        </button>
+                        <AuthButton isLoading={isResettingPassword} loadingText="Resetting password...">
+                            Reset password
+                        </AuthButton>
                     </form>
-                ) : (
-                    <div className="text-center py-6">
-                        {/* Success Icon */}
-                        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
-                        </div>
 
-                        <h3 className="font-archivo text-xl font-bold text-neutral-900 mb-2">
-                            Password Reset Successful!
-                        </h3>
-                        <p className="font-inter text-sm text-neutral-600 mb-6">
-                            Your password has been reset successfully.<br />
-                            You can now sign in with your new password.
-                        </p>
-
+                    <div className="text-center">
                         <Link
                             to="/auth/login"
-                            className="inline-block w-full bg-primary-500 hover:bg-primary-600 text-white font-inter text-base font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg active:scale-95"
+                            className="inline-flex items-center gap-2 font-poppins text-sm font-semibold text-neutral-600 hover:text-neutral-900 transition-colors"
                         >
-                            Go to Sign In
+                            <FiArrowLeft aria-hidden="true" />
+                            Back to sign in
                         </Link>
                     </div>
-                )}
-
-                {/* Back to Login (only show if not submitted) */}
-                {!isSubmitted && (
-                    <div className="mt-6">
-                        <Link
-                            to="/auth/login"
-                            className="flex items-center justify-center font-inter text-sm font-semibold text-neutral-700 hover:text-neutral-900 transition-colors"
-                        >
-                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                            </svg>
-                            Back to Sign In
-                        </Link>
+                </>
+            ) : (
+                <div className="space-y-6">
+                    <AuthStatusIcon tone="success" />
+                    <div>
+                        <AuthHeader
+                            title="Password reset"
+                            subtitle="Your password has been reset successfully. You can now sign in with your new password."
+                        />
                     </div>
-                )}
-            </div>
+                    <Link to="/auth/login" className={authPrimaryButton}>
+                        Go to sign in
+                    </Link>
+                </div>
+            )}
         </AuthLayout>
     );
 }
